@@ -9,11 +9,9 @@ import { Filter } from '@/lib/create-filters';
 import theme from '@/theme';
 
 const plantTagged = (plant: Plant, filters: Filter[]): boolean => {
-  if (plant.sponsor && filters.some(f => f.type === 'tag' && f.id === 'sponsored')) {
-    return true;
-  }
-
-  return filters.filter(f => f.type === 'sponsor').some(f => plant.sponsor === f.id);
+  return (plant.sponsor && filters.some(f => f.type === 'tag' && f.id === 'sponsored')) 
+   || (filters.filter(f => f.type === 'sponsor').some(f => plant.sponsor === f.id))
+   || (filters.filter(f => f.type === 'tag').some(f => plant.tags.includes(f.id)));
 }
 
 const plantsToFeatureCollection = (plants: PaginatedResult<Plant>, showCanopy: boolean, selectedPlantId: string, filters: Filter[]): FeatureCollection => {
@@ -28,6 +26,7 @@ const plantsToFeatureCollection = (plants: PaginatedResult<Plant>, showCanopy: b
           code: plant.code,
           selected: selectedPlantId === plant.id,
           tagged: plantTagged(plant, filters),
+          height: plant.height,
         }
       }
     ))
@@ -37,6 +36,7 @@ const plantsToFeatureCollection = (plants: PaginatedResult<Plant>, showCanopy: b
 type Props = {
   plants: PaginatedResult<Plant>;
   showCanopy: boolean;
+  show3D: boolean;
   onPlantClick: (plantId: string) => void;
   selectedPlantId: string;
   filters: Filter[];
@@ -76,6 +76,17 @@ const Plants: Component<Props> = (props) => {
         type: 'line',
         paint: {
           'line-color': 'gray'
+        }
+      }} />
+      <Layer style={{
+        type: 'fill-extrusion',
+        layout: {
+          visibility: props.show3D ? 'visible' : 'none'
+        },
+        paint: {
+          'fill-extrusion-height': ['get', 'height'],
+          'fill-extrusion-color': 'gray',
+          'fill-extrusion-opacity': 1
         }
       }} />
       <Layer style={{

@@ -12,6 +12,8 @@ import { PaginatedResult } from '@/models/paginated-result';
 import { Plant } from '@/models/plant';
 import createFilters from '@/lib/create-filters';
 import theme from '@/theme';
+import { Tags } from '@/models/tags';
+import getTags from '@/lib/api/get-tags';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -20,7 +22,9 @@ const FixedFab = styled(Fab)({
 
 const App: Component = () => {
   const [plants] = createCachedResource<PaginatedResult<Plant>>('plants', getPlantsWithPosition);
+  const [tags] = createCachedResource<Tags>('tags', getTags);
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
+  const [show3D, setShow3D] = createSignal<boolean>(false);
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
   const [filters, addFilter, removeFilter] = createFilters([]);
 
@@ -37,6 +41,7 @@ const App: Component = () => {
 
   const searchGroups = createMemo<SearchEntryGroup[]>(() => {
     const _plants = plants.loading ? [] : plants().items;
+    const _tags = tags.loading ? {} : tags();
     const sponsors = new Set<string>();
     const plantEntries: SearchEntry[] = _plants.map(plant => {
       if (plant.sponsor) {
@@ -66,7 +71,12 @@ const App: Component = () => {
             id: 'sponsored',
             primaryText: 'Parrainé',
             searchTerms: ['Parrainé']
-          }
+          },
+          ...Object.entries(_tags).map<SearchEntry>(([tagId, label]) => ({
+            id: tagId,
+            primaryText: label,
+            searchTerms: [label]
+          }))
         ]
       },
       {
@@ -97,14 +107,18 @@ const App: Component = () => {
         <Suspense>
           <Plants plants={plants()}
             showCanopy={showCanopy()}
+            show3D={show3D()}
             onPlantClick={(plantId: string) => setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId)}
             selectedPlantId={selectedPlantId()}
             filters={filters()}
           />
         </Suspense>
       </EditorMap>
-      <FixedFab sx={{ right: '16px', top: '144px' }} onClick={() => setShowCanopy(!showCanopy())}>
+      <FixedFab sx={{ right: '16px', bottom: '16px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'default'}>
         T
+      </FixedFab>
+      <FixedFab sx={{ right: '16px', bottom: '88px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'default'}>
+        3D
       </FixedFab>
     </ThemeProvider>
   );
