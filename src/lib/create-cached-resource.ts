@@ -15,7 +15,7 @@ export function createCachedResource<T>(name: string, fetchData: () => Promise<T
   });
 
   const fetchCached = () => {
-    if (navigator.onLine) {
+    if (navigator.onLine && false) {
       return fetchData().then(data => {
         localStorage.setItem(cacheKey, JSON.stringify(data));
         return data;

@@ -14,6 +14,11 @@ import createFilters from '@/lib/create-filters';
 import theme from '@/theme';
 import { Tags } from '@/models/tags';
 import getTags from '@/lib/api/get-tags';
+import SelectionDrawer from './components/SelectionDrawer';
+import PlantDetails from './components/PlantDetails';
+import { useMap } from 'solid-map-gl';
+import { Map } from 'maplibre-gl';
+import { ModeStandby, Park } from '@suid/icons-material';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -21,12 +26,20 @@ const FixedFab = styled(Fab)({
 });
 
 const App: Component = () => {
+  const [map, setMap] = createSignal<Map | undefined>(undefined);
   const [plants] = createCachedResource<PaginatedResult<Plant>>('plants', getPlantsWithPosition);
   const [tags] = createCachedResource<Tags>('tags', getTags);
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
   const [show3D, setShow3D] = createSignal<boolean>(false);
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
   const [filters, addFilter, removeFilter] = createFilters([]);
+
+  const flyTo = (coords: [lat: number, lon: number], zoom: number = 21) => {
+    map()?.flyTo({
+      center: [coords[1], coords[0]],
+      zoom,
+    });
+  }
 
   const onEntryClick = (groupId: string, entry: SearchEntry) => {
     switch (groupId) {
@@ -35,6 +48,10 @@ const App: Component = () => {
         break;
       case 'tags':
         addFilter({id: entry.id, label: entry.primaryText, type: 'tag'});
+        break;
+      case 'plants':
+        setSelectedPlantId(entry.id);
+        flyTo(selectedPlant()?.position);
         break;
     }
   }
@@ -92,6 +109,14 @@ const App: Component = () => {
     ]
   });
 
+  const selectedPlant = createMemo<Plant>(() => {
+    if (!selectedPlantId() || plants.loading) {
+      return undefined;
+    }
+
+    return plants().items.find(plant => plant.id === selectedPlantId());
+  });
+
   return (
     <ThemeProvider theme={theme}>
       <AppBar position='fixed'>
@@ -102,7 +127,7 @@ const App: Component = () => {
             <Filters filters={filters()} onFilterDelete={removeFilter} />
           </Toolbar>}
       </AppBar>
-      <EditorMap>
+      <EditorMap setMap={setMap}>
         <StaticMapFeatures />
         <Suspense>
           <Plants plants={plants()}
@@ -114,12 +139,15 @@ const App: Component = () => {
           />
         </Suspense>
       </EditorMap>
-      <FixedFab sx={{ right: '16px', bottom: '16px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'default'}>
-        T
+      <FixedFab sx={{ right: '16px', bottom: '72px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'primary'}>
+        {showCanopy() ? <Park /> : <ModeStandby />}
       </FixedFab>
-      <FixedFab sx={{ right: '16px', bottom: '88px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'default'}>
+      <FixedFab sx={{ right: '16px', bottom: '144px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'primary'}>
         3D
       </FixedFab>
+      <SelectionDrawer title={selectedPlant()?.code} placeholder='Sélectionnez une plante'>
+        {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags()} />}
+      </SelectionDrawer>
     </ThemeProvider>
   );
 };
