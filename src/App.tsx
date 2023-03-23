@@ -7,8 +7,8 @@ import Filters from '@/components/Filters';
 import Plants from '@/components/Plants';
 import StaticMapFeatures from '@/components/StaticMapFeatures';
 import { getPlantsWithPosition } from '@/lib/api/get-plants-with-position';
+import { getHedges } from '@/lib/api/get-hedges';
 import { createCachedResource } from '@/lib/create-cached-resource';
-import { PaginatedResult } from '@/models/paginated-result';
 import { Plant } from '@/models/plant';
 import createFilters from '@/lib/create-filters';
 import theme from '@/theme';
@@ -16,9 +16,10 @@ import { Tags } from '@/models/tags';
 import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
-import { useMap } from 'solid-map-gl';
 import { Map } from 'maplibre-gl';
 import { ModeStandby, Park } from '@suid/icons-material';
+import { Hedge } from './models/hedge';
+import Hedges from './components/Hedges';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -27,8 +28,9 @@ const FixedFab = styled(Fab)({
 
 const App: Component = () => {
   const [map, setMap] = createSignal<Map | undefined>(undefined);
-  const [plants] = createCachedResource<PaginatedResult<Plant>>('plants', getPlantsWithPosition);
+  const [plants] = createCachedResource<Plant[]>('plants', getPlantsWithPosition);
   const [tags] = createCachedResource<Tags>('tags', getTags);
+  const [hedges] = createCachedResource<Hedge[]>('hedges', getHedges)
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
   const [show3D, setShow3D] = createSignal<boolean>(false);
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
@@ -57,7 +59,7 @@ const App: Component = () => {
   }
 
   const searchGroups = createMemo<SearchEntryGroup[]>(() => {
-    const _plants = plants.loading ? [] : plants().items;
+    const _plants = plants.loading ? [] : plants();
     const _tags = tags.loading ? {} : tags();
     const sponsors = new Set<string>();
     const plantEntries: SearchEntry[] = _plants.map(plant => {
@@ -114,7 +116,7 @@ const App: Component = () => {
       return undefined;
     }
 
-    return plants().items.find(plant => plant.id === selectedPlantId());
+    return plants().find(plant => plant.id === selectedPlantId());
   });
 
   return (
@@ -129,15 +131,14 @@ const App: Component = () => {
       </AppBar>
       <EditorMap setMap={setMap}>
         <StaticMapFeatures />
-        <Suspense>
-          <Plants plants={plants()}
-            showCanopy={showCanopy()}
-            show3D={show3D()}
-            onPlantClick={(plantId: string) => setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId)}
-            selectedPlantId={selectedPlantId()}
-            filters={filters()}
-          />
-        </Suspense>
+        <Hedges hedges={hedges.loading ? [] : hedges()} />
+        <Plants plants={plants.loading ? [] : plants()}
+          showCanopy={showCanopy()}
+          show3D={show3D()}
+          onPlantClick={(plantId: string) => setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId)}
+          selectedPlantId={selectedPlantId()}
+          filters={filters()}
+        />
       </EditorMap>
       <FixedFab sx={{ right: '16px', bottom: '72px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'primary'}>
         {showCanopy() ? <Park /> : <ModeStandby />}

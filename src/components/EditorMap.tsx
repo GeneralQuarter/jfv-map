@@ -18,12 +18,20 @@ const EditorMap: Component<Props> = (props) => {
   return (
     <MapGL
       mapLib={maplibre}
-      options={{ style: { version: 8, glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf', sources: {}, layers: [] } }}
+      options={{
+        style: {
+          version: 8, glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf', sources: {}, layers: [{
+            id: 'background',
+            type: 'background',
+            paint: { 'background-color': '#fffbec' }
+          }]
+        }
+      }}
       viewport={viewport()}
       onViewportChange={(evt: Viewport) => setViewport(evt)}
       debug={true}
     >
-      <MapSetter setMap={props.setMap}/>
+      <MapSetter setMap={props.setMap} />
       {props.children}
     </MapGL>
   );

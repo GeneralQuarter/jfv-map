@@ -1,4 +1,3 @@
-import { PaginatedResult } from '@/models/paginated-result';
 import { Plant } from '@/models/plant';
 import { Component, createMemo, onCleanup, onMount } from 'solid-js';
 import { Source, Layer, useMap } from 'solid-map-gl';
@@ -14,10 +13,10 @@ const plantTagged = (plant: Plant, filters: Filter[]): boolean => {
    || (filters.filter(f => f.type === 'tag').some(f => plant.tags.includes(f.id)));
 }
 
-const plantsToFeatureCollection = (plants: PaginatedResult<Plant>, showCanopy: boolean, selectedPlantId: string, filters: Filter[]): FeatureCollection => {
+const plantsToFeatureCollection = (plants: Plant[], showCanopy: boolean, selectedPlantId: string, filters: Filter[]): FeatureCollection => {
   return {
     type: 'FeatureCollection',
-    features: plants.items.map(plant => circle(
+    features: plants.map(plant => circle(
       [plant.position[1], plant.position[0]],
       (showCanopy || plant.width < 2 ? plant.width : 2) / 2000,
       {
@@ -34,7 +33,7 @@ const plantsToFeatureCollection = (plants: PaginatedResult<Plant>, showCanopy: b
 }
 
 type Props = {
-  plants: PaginatedResult<Plant>;
+  plants: Plant[];
   showCanopy: boolean;
   show3D: boolean;
   onPlantClick: (plantId: string) => void;
@@ -95,7 +94,7 @@ const Plants: Component<Props> = (props) => {
           'text-field': ['get', 'code']
         },
         paint: {
-          'text-halo-color': '#fff',
+          'text-halo-color': '#fffbec',
           'text-halo-width': 2,
           'text-opacity': ['step', ['zoom'], 0, 19, 1] // under 19 -> hidden, above 19 -> shown
         },
