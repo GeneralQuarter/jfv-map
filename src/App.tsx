@@ -8,7 +8,7 @@ import Plants from '@/components/Plants';
 import StaticMapFeatures from '@/components/StaticMapFeatures';
 import { getPlantsWithPosition } from '@/lib/api/get-plants-with-position';
 import { getHedges } from '@/lib/api/get-hedges';
-import { createCachedResource } from '@/lib/create-cached-resource';
+import { createCachedApiCall } from '@/lib/create-cached-api-call';
 import { Plant } from '@/models/plant';
 import createFilters from '@/lib/create-filters';
 import theme from '@/theme';
@@ -32,9 +32,9 @@ const FixedFab = styled(Fab)({
 
 const App: Component = () => {
   const [map, setMap] = createSignal<Map | undefined>(undefined);
-  const [plants] = createCachedResource<Plant[]>('plants', getPlantsWithPosition);
-  const [tags] = createCachedResource<Tags>('tags', getTags);
-  const [hedges] = createCachedResource<Hedge[]>('hedges', getHedges);
+  const [plants] = createCachedApiCall<Plant[]>('plants', getPlantsWithPosition);
+  const [tags] = createCachedApiCall<Tags>('tags', getTags);
+  const [hedges] = createCachedApiCall<Hedge[]>('hedges', getHedges);
   const [notes, noteTags, upsertNote, clearNote] = createNotes();
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
   const [show3D, setShow3D] = createSignal<boolean>(false);
@@ -65,8 +65,8 @@ const App: Component = () => {
   }
 
   const searchGroups = createMemo<SearchEntryGroup[]>(() => {
-    const _plants = plants.loading ? [] : plants();
-    const _tags = tags.loading ? {} : tags();
+    const _plants = plants() ?? [];
+    const _tags = tags() ?? {};
     const sponsors = new Set<string>();
     const plantEntries: SearchEntry[] = _plants.map(plant => {
       if (plant.sponsor) {
@@ -123,7 +123,7 @@ const App: Component = () => {
   });
 
   const selectedPlant = createMemo<Plant | undefined>(() => {
-    if (!selectedPlantId() || plants.loading) {
+    if (!selectedPlantId() || !plants()) {
       return undefined;
     }
 
@@ -157,8 +157,8 @@ const App: Component = () => {
       </AppBar>
       <EditorMap setMap={setMap}>
         <StaticMapFeatures />
-        <Hedges hedges={hedges.loading ? [] : hedges()} />
-        <Plants plants={plants.loading ? [] : plants()}
+        <Hedges hedges={hedges() ?? []} />
+        <Plants plants={plants() ?? []}
           showCanopy={showCanopy()}
           show3D={show3D()}
           onPlantClick={(plantId: string) => setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId)}
@@ -180,7 +180,7 @@ const App: Component = () => {
           </IconButton>
         </>
       }>
-        {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags()} />}
+        {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags() ?? {}} />}
       </SelectionDrawer>
       <NoteDialog title={selectedPlant()?.code} open={noteDialogOpen()} setOpen={setNoteDialogOpen} note={note()} existingTags={noteTags()} onNoteUpdate={upsertNote} onNoteClear={clearNote} />
       <ReloadPrompt />

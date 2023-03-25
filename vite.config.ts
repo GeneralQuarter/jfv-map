@@ -7,7 +7,7 @@ import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
 const pwaOptions: Partial<VitePWAOptions> = {
   mode: 'development',
   base: '/',
-  includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png'],
+  includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png', 'logo512mask.png'],
   manifest: {
     name: 'Jardin Forestier des Vallées - Map',
     short_name: 'JFV Map',
@@ -19,12 +19,12 @@ const pwaOptions: Partial<VitePWAOptions> = {
         type: 'image/png',
       },
       {
-        src: '/logo512.png',
+        src: 'logo512.png',
         sizes: '512x512',
         type: 'image/png',
       },
       {
-        src: 'logo512.png',
+        src: 'logo512mask.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any maskable',
