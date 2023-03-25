@@ -3,17 +3,27 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "vite",
+    "dev": "rimraf dev-dist && cross-env DEBUG=vite-plugin-pwa:* SW_DEV=true vite --force",
+    "start-sw": "npm run build-sw && npm run serve",
+    "build-sw": "rimraf dist && cross-env DEBUG=vite-plugin-pwa:* BASE_URL=/ SOURCE_MAP=true SW=true vite build",
     "build": "vite build",
-    "serve": "vite preview"
+    "serve": "serve dist"
   },
   "license": "MIT",
   "devDependencies": {
     "@suid/vite-plugin": "^0.1.2",
+    "cross-env": "^7.0.3",
+    "https-localhost": "^4.7.1",
+    "rimraf": "^4.4.1",
     "typescript": "^5.0.2",
     "url": "^0.11.0",
     "vite": "^4.2.1",
-    "vite-plugin-solid": "^2.6.1"
+    "vite-plugin-pwa": "^0.14.6",
+    "vite-plugin-solid": "^2.6.1",
+    "workbox-core": "^6.5.4",
+    "workbox-precaching": "^6.5.4",
+    "workbox-routing": "^6.5.4",
+    "workbox-window": "^6.5.4"
   },
   "dependencies": {
     "@suid/icons-material": "^0.5.11",

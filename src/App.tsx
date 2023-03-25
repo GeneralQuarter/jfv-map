@@ -23,6 +23,7 @@ import Hedges from './components/Hedges';
 import createNotes from './lib/create-notes';
 import { Note } from './models/note';
 import NoteDialog from './components/NoteDialog';
+import ReloadPrompt from './components/ReloadPrompt';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -182,6 +183,7 @@ const App: Component = () => {
         {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags()} />}
       </SelectionDrawer>
       <NoteDialog title={selectedPlant()?.code} open={noteDialogOpen()} setOpen={setNoteDialogOpen} note={note()} existingTags={noteTags()} onNoteUpdate={upsertNote} onNoteClear={clearNote} />
+      <ReloadPrompt />
     </ThemeProvider>
   );
 };

@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "target": "ESNext",
+    "lib": ["DOM", "WebWorker"],
     "module": "ESNext",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/info", "vite-plugin-pwa/solid"],
     "noEmit": true,
     "isolatedModules": true,
     "paths": {
