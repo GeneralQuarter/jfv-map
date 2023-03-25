@@ -1,4 +1,4 @@
-import { AppBar, styled, ThemeProvider, Toolbar } from '@suid/material';
+import { AppBar, IconButton, styled, ThemeProvider, Toolbar } from '@suid/material';
 import { Fab } from '@suid/material';
 import { Component, createSignal, Suspense, createMemo } from 'solid-js';
 import AppSearch, { SearchEntry, SearchEntryGroup } from '@/components/AppSearch';
@@ -17,9 +17,12 @@ import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
 import { Map } from 'maplibre-gl';
-import { ModeStandby, Park } from '@suid/icons-material';
+import { ModeStandby, NoteAlt, Park } from '@suid/icons-material';
 import { Hedge } from './models/hedge';
 import Hedges from './components/Hedges';
+import createNotes from './lib/create-notes';
+import { Note } from './models/note';
+import NoteDialog from './components/NoteDialog';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -30,11 +33,13 @@ const App: Component = () => {
   const [map, setMap] = createSignal<Map | undefined>(undefined);
   const [plants] = createCachedResource<Plant[]>('plants', getPlantsWithPosition);
   const [tags] = createCachedResource<Tags>('tags', getTags);
-  const [hedges] = createCachedResource<Hedge[]>('hedges', getHedges)
+  const [hedges] = createCachedResource<Hedge[]>('hedges', getHedges);
+  const [notes, noteTags, upsertNote, clearNote] = createNotes();
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
   const [show3D, setShow3D] = createSignal<boolean>(false);
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
   const [filters, addFilter, removeFilter] = createFilters([]);
+  const [noteDialogOpen, setNoteDialogOpen] = createSignal<boolean>(false);
 
   const flyTo = (coords: [lat: number, lon: number], zoom: number = 21) => {
     map()?.flyTo({
@@ -91,6 +96,11 @@ const App: Component = () => {
             primaryText: 'Parrainé',
             searchTerms: ['Parrainé']
           },
+          {
+            id: 'hasNote',
+            primaryText: 'Noté',
+            searchTerms: ['Noté']
+          },
           ...Object.entries(_tags).map<SearchEntry>(([tagId, label]) => ({
             id: tagId,
             primaryText: label,
@@ -111,13 +121,28 @@ const App: Component = () => {
     ]
   });
 
-  const selectedPlant = createMemo<Plant>(() => {
+  const selectedPlant = createMemo<Plant | undefined>(() => {
     if (!selectedPlantId() || plants.loading) {
       return undefined;
     }
 
     return plants().find(plant => plant.id === selectedPlantId());
   });
+
+  const note = createMemo<Note | undefined>(() => {
+    const _selectedPlantId = selectedPlantId();
+
+    if (!_selectedPlantId) {
+      return undefined;
+    }
+
+    return notes().find(n => n.objectId === _selectedPlantId) ?? {objectId: _selectedPlantId, tags: [], content: ''};
+  });
+
+  const openNoteDialog = (e: MouseEvent) => {
+    e.stopPropagation();
+    setNoteDialogOpen(true);
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -138,6 +163,7 @@ const App: Component = () => {
           onPlantClick={(plantId: string) => setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId)}
           selectedPlantId={selectedPlantId()}
           filters={filters()}
+          notes={notes()}
         />
       </EditorMap>
       <FixedFab sx={{ right: '16px', bottom: '72px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'primary'}>
@@ -146,9 +172,16 @@ const App: Component = () => {
       <FixedFab sx={{ right: '16px', bottom: '144px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'primary'}>
         3D
       </FixedFab>
-      <SelectionDrawer title={selectedPlant()?.code} placeholder='Sélectionnez une plante'>
+      <SelectionDrawer title={selectedPlant()?.code} placeholder='Sélectionnez une plante' actions={selectedPlant() && 
+        <>
+          <IconButton onClick={openNoteDialog} sx={{ width: 56 }}>
+            <NoteAlt />
+          </IconButton>
+        </>
+      }>
         {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags()} />}
       </SelectionDrawer>
+      <NoteDialog title={selectedPlant()?.code} open={noteDialogOpen()} setOpen={setNoteDialogOpen} note={note()} existingTags={noteTags()} onNoteUpdate={upsertNote} onNoteClear={clearNote} />
     </ThemeProvider>
   );
 };

@@ -1,5 +1,4 @@
 import { createSignal, Accessor } from 'solid-js';
-import { HUE_FRACTIONS } from './color-from-hue-index';
 
 export type Filter = {
   id: string;
