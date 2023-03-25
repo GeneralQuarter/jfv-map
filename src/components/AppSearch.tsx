@@ -2,6 +2,9 @@ import { Component, createMemo, createSignal, For } from 'solid-js';
 import { InputBase, styled, alpha, IconButton, Fade, Popover, List, ListSubheader, ListItem, ListItemButton, ListItemText, Typography } from '@suid/material';
 import { Search as SearchIcon, Close as CloseIcon } from '@suid/icons-material';
 import theme from '@/theme';
+import { normalizeSearchTerm } from '@/lib/normalize-search-term';
+import { createSignaledWorker } from '@solid-primitives/workers';
+import { createScheduled, debounce } from '@solid-primitives/scheduled';
  
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -70,29 +73,35 @@ type Props = {
   onEntryClick: (groupId: string, entryId: SearchEntry) => void;
 }
 
-const normalize = (term: string) => {
-  return term.normalize('NFD').replace(/\p{Diacritic}/gu, '');
-}
-
-const match = (term: string, searchTerms: string[]): boolean => {
-  const formattedTerm = normalize(term.toLocaleLowerCase());
-  return searchTerms.some(t => normalize(t.toLocaleLowerCase()).includes(formattedTerm));
-}
-
 const AppSearch: Component<Props> = (props) => {
   const [textValue, setTextValue] = createSignal<string>('');
   const [anchorEl, setAnchorEl] = createSignal<HTMLDivElement | undefined>(undefined);
-  const filteredGroups = createMemo<SearchEntryGroup[]>(() => {
-    if (textValue().length < 2) {
-      return [];
-    }
+  const [filteredGroups, setFilteredGroups] = createSignal<SearchEntryGroup[]>([]);
+  const scheduledSearch = createScheduled(fn => debounce(fn, 300));
 
-    return props.groups
-      .map(group => ({
+  const workerInput = createMemo(() => {
+    const normalizedTerm = normalizeSearchTerm(textValue() ?? '');
+    return [normalizedTerm, props.groups];
+  });
+
+  const debouncedWorkerInput = createMemo((p) => {
+    const value = workerInput();
+    return scheduledSearch() ? value : p;
+  });
+
+  createSignaledWorker({
+    input: debouncedWorkerInput,
+    output: setFilteredGroups,
+    func: function search([normalizedTerm, groups]: [string, SearchEntryGroup[]]) {
+      if (normalizedTerm.length < 2) {
+        return [];
+      }
+
+      return groups.map(group => ({
         ...group,
-        entries: group.entries.filter(entry => match(textValue(), entry.searchTerms)).slice(0, 100)
-      }))
-      .filter(group => group.entries.length > 0)
+        entries: group.entries.filter(entry => entry.searchTerms.some(t => t.includes(normalizedTerm))).slice(0, 100),
+      })).filter(group => group.entries.length > 0);
+    }
   });
 
   const showResults = () => textValue() !== '';

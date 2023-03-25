@@ -24,6 +24,7 @@ import createNotes from './lib/create-notes';
 import { Note } from './models/note';
 import NoteDialog from './components/NoteDialog';
 import ReloadPrompt from './components/ReloadPrompt';
+import { normalizeSearchTerms } from './lib/normalize-search-term';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -78,13 +79,13 @@ const App: Component = () => {
         primaryText: plant.code,
         secondaryText: plant.commonName,
         tertiaryText: plant.sponsor,
-        searchTerms: [plant.code, plant.fullLatinName, plant.commonName].concat(plant.sponsor ? [plant.sponsor] : [])
+        searchTerms: normalizeSearchTerms([plant.code, plant.fullLatinName, plant.commonName].concat(plant.sponsor ? [plant.sponsor] : []))
       });
     });
     const sponsorEntries: SearchEntry[] = [...sponsors].map(sponsor => ({
       id: sponsor,
       primaryText: sponsor,
-      searchTerms: [sponsor]
+      searchTerms: normalizeSearchTerms([sponsor])
     }));
 
     return [
@@ -95,17 +96,17 @@ const App: Component = () => {
           {
             id: 'sponsored',
             primaryText: 'Parrainé',
-            searchTerms: ['Parrainé']
+            searchTerms: ['parraine']
           },
           {
             id: 'hasNote',
             primaryText: 'Noté',
-            searchTerms: ['Noté']
+            searchTerms: ['note']
           },
           ...Object.entries(_tags).map<SearchEntry>(([tagId, label]) => ({
             id: tagId,
             primaryText: label,
-            searchTerms: [label]
+            searchTerms: normalizeSearchTerms([label])
           }))
         ]
       },

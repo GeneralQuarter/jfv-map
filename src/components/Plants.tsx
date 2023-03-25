@@ -1,5 +1,5 @@
 import { Plant } from '@/models/plant';
-import { Component, createMemo, onCleanup, onMount } from 'solid-js';
+import { Component, createMemo, onCleanup } from 'solid-js';
 import { Source, Layer, useMap } from 'solid-map-gl';
 import type { FeatureCollection } from 'geojson';
 import circle from '@turf/circle';
