@@ -80,7 +80,10 @@ function search([normalizedTerm, groups]: [string, SearchEntryGroup[]]): SearchE
 
   return groups.map(group => ({
     ...group,
-    entries: group.entries.filter(entry => entry.searchTerms.some(t => t.includes(normalizedTerm))).slice(0, 100),
+    entries: group.entries
+      .filter(entry => entry.searchTerms.some(t => t.includes(normalizedTerm)))
+      .sort((a, b) => a.primaryText.localeCompare(b.primaryText))
+      .slice(0, 100),
   })).filter(group => group.entries.length > 0);
 }
 
