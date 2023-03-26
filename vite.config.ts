@@ -5,7 +5,6 @@ import { fileURLToPath, URL } from 'url';
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
 
 const pwaOptions: Partial<VitePWAOptions> = {
-  mode: 'development',
   base: '/',
   includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png', 'logo512mask.png'],
   manifest: {
@@ -51,7 +50,7 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
-    sourcemap: process.env.SOURCEMAP === 'true'
+    sourcemap: process.env.SOURCE_MAP === 'true'
   },
   resolve: {
     alias: [

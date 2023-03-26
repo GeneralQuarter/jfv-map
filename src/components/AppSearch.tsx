@@ -1,9 +1,9 @@
-import { Component, createMemo, createSignal, For } from 'solid-js';
+import { Component, createEffect, createMemo, createSignal, For, on } from 'solid-js';
 import { InputBase, styled, alpha, IconButton, Fade, Popover, List, ListSubheader, ListItem, ListItemButton, ListItemText, Typography } from '@suid/material';
 import { Search as SearchIcon, Close as CloseIcon } from '@suid/icons-material';
 import theme from '@/theme';
 import { normalizeSearchTerm } from '@/lib/normalize-search-term';
-import { createSignaledWorker } from '@solid-primitives/workers';
+import { createSignaledWorker, createWorker } from '@solid-primitives/workers';
 import { createScheduled, debounce } from '@solid-primitives/scheduled';
  
 const Search = styled('div')(({ theme }) => ({
@@ -73,18 +73,29 @@ type Props = {
   onEntryClick: (groupId: string, entryId: SearchEntry) => void;
 }
 
+function search([normalizedTerm, groups]: [string, SearchEntryGroup[]]): SearchEntryGroup[] {
+  if (normalizedTerm.length < 2) {
+    return [];
+  }
+
+  return groups.map(group => ({
+    ...group,
+    entries: group.entries.filter(entry => entry.searchTerms.some(t => t.includes(normalizedTerm))).slice(0, 100),
+  })).filter(group => group.entries.length > 0);
+}
+
 const AppSearch: Component<Props> = (props) => {
   const [textValue, setTextValue] = createSignal<string>('');
   const [anchorEl, setAnchorEl] = createSignal<HTMLDivElement | undefined>(undefined);
   const [filteredGroups, setFilteredGroups] = createSignal<SearchEntryGroup[]>([]);
   const scheduledSearch = createScheduled(fn => debounce(fn, 300));
 
-  const workerInput = createMemo(() => {
+  const workerInput = createMemo<[normalizedTerm: string, groups: SearchEntryGroup[]]>(() => {
     const normalizedTerm = normalizeSearchTerm(textValue() ?? '');
     return [normalizedTerm, props.groups];
   });
 
-  const debouncedWorkerInput = createMemo((p) => {
+  const debouncedWorkerInput = createMemo<[normalizedTerm: string, groups: SearchEntryGroup[]]>((p) => {
     const value = workerInput();
     return scheduledSearch() ? value : p;
   });
@@ -92,16 +103,7 @@ const AppSearch: Component<Props> = (props) => {
   createSignaledWorker({
     input: debouncedWorkerInput,
     output: setFilteredGroups,
-    func: function search([normalizedTerm, groups]: [string, SearchEntryGroup[]]) {
-      if (normalizedTerm.length < 2) {
-        return [];
-      }
-
-      return groups.map(group => ({
-        ...group,
-        entries: group.entries.filter(entry => entry.searchTerms.some(t => t.includes(normalizedTerm))).slice(0, 100),
-      })).filter(group => group.entries.length > 0);
-    }
+    func: search,
   });
 
   const showResults = () => textValue() !== '';
