@@ -1,5 +1,5 @@
-import { ExpandLess, Note, NoteAlt, TouchApp } from '@suid/icons-material';
-import { Box, IconButton, Paper, Slide, Stack, styled, Typography } from '@suid/material';
+import { ExpandLess, TouchApp } from '@suid/icons-material';
+import { Box, Paper, Stack, styled, Typography } from '@suid/material';
 import { Component, createEffect, createSignal, JSX } from 'solid-js';
 
 const Container = styled(Paper)({

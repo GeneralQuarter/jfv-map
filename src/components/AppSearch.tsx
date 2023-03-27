@@ -1,10 +1,11 @@
-import { Component, createEffect, createMemo, createSignal, For, on } from 'solid-js';
+import { Component, createMemo, createSignal, For } from 'solid-js';
 import { InputBase, styled, alpha, IconButton, Fade, Popover, List, ListSubheader, ListItem, ListItemButton, ListItemText, Typography } from '@suid/material';
 import { Search as SearchIcon, Close as CloseIcon } from '@suid/icons-material';
 import theme from '@/theme';
 import { normalizeSearchTerm } from '@/lib/normalize-search-term';
-import { createSignaledWorker, createWorker } from '@solid-primitives/workers';
+import { createSignaledWorker } from '@solid-primitives/workers';
 import { createScheduled, debounce } from '@solid-primitives/scheduled';
+import type { SearchEntry, SearchEntryGroup } from '@/models/search-entry';
  
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -53,20 +54,6 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 const PopoverFull = styled(Popover)(({ theme }) => ({
   top: 48,
 }));
-
-export type SearchEntry = {
-  id: string;
-  primaryText: string;
-  secondaryText?: string;
-  tertiaryText?: string;
-  searchTerms: string[];
-}
-
-export type SearchEntryGroup = {
-  id: string;
-  headerText: string;
-  entries: SearchEntry[];
-}
 
 type Props = {
   groups: SearchEntryGroup[];

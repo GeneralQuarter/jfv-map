@@ -91,7 +91,7 @@ const Plants: Component<Props> = (props) => {
           'fill-extrusion-opacity': 1
         }
       }} />
-      <Layer style={{
+      <Layer id='plant-codes' style={{
         type: 'symbol',
         layout: {
           'text-field': ['get', 'code'],

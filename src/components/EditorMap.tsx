@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal, JSX, Setter } from 'solid-js';
+import { Component, JSX, Setter } from 'solid-js';
 import MapGL, { Viewport } from 'solid-map-gl';
 import * as maplibre from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';

@@ -1,7 +1,7 @@
 import { AppBar, IconButton, styled, ThemeProvider, Toolbar } from '@suid/material';
 import { Fab } from '@suid/material';
 import { Component, createSignal, createMemo } from 'solid-js';
-import AppSearch, { SearchEntry, SearchEntryGroup } from '@/components/AppSearch';
+import AppSearch from '@/components/AppSearch';
 import EditorMap from '@/components/EditorMap';
 import Filters from '@/components/Filters';
 import Plants from '@/components/Plants';
@@ -17,16 +17,20 @@ import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
 import { Map } from 'maplibre-gl';
-import { ModeStandby, Navigation, NoteAlt, Park } from '@suid/icons-material';
+import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot } from '@suid/icons-material';
 import { Hedge } from './models/hedge';
 import Hedges from './components/Hedges';
 import createNotes from './lib/create-notes';
 import { Note } from './models/note';
 import NoteDialog from './components/NoteDialog';
 import ReloadPrompt from './components/ReloadPrompt';
-import { normalizeSearchTerms } from './lib/normalize-search-term';
 import type { Viewport } from 'solid-map-gl';
 import create3DMapTransition from './lib/create-3d-map-transition';
+import createSearchGroups from './lib/create-search-groups';
+import type { SearchEntry } from './models/search-entry';
+import createMeasureGraph from './lib/create-measure-graph';
+import { MeasureNode } from './models/measure-graph';
+import Measures from './components/Measures';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -40,11 +44,15 @@ const App: Component = () => {
   const [tags] = createCachedApiCall<Tags>('tags', getTags);
   const [hedges] = createCachedApiCall<Hedge[]>('hedges', getHedges);
   const [notes, noteTags, upsertNote, clearNote] = createNotes();
+  const [graph, addMeasure, removeMeasure] = createMeasureGraph();
+  const [measureNodeStart, setMeasureNodeStart] = createSignal<MeasureNode | undefined>(undefined);
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
   const [show3D, setShow3D] = createSignal<boolean>(false);
+  const [tapeActive, setTapeActive] = createSignal<boolean>(false);
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
   const [filters, addFilter, removeFilter] = createFilters([]);
   const [noteDialogOpen, setNoteDialogOpen] = createSignal<boolean>(false);
+  const searchGroups = createSearchGroups(plants, tags);
 
   create3DMapTransition(show3D, viewport, map);
 
@@ -55,7 +63,7 @@ const App: Component = () => {
     });
   }
 
-  const resetViewport = () => {
+  const resetBearing = () => {
     map()?.flyTo({
       bearing: 0
     });
@@ -64,10 +72,10 @@ const App: Component = () => {
   const onEntryClick = (groupId: string, entry: SearchEntry) => {
     switch (groupId) {
       case 'sponsors':
-        addFilter({id: entry.id, label: entry.id, type: 'sponsor'});
+        addFilter({ id: entry.id, label: entry.id, type: 'sponsor' });
         break;
       case 'tags':
-        addFilter({id: entry.id, label: entry.primaryText, type: 'tag'});
+        addFilter({ id: entry.id, label: entry.primaryText, type: 'tag' });
         break;
       case 'plants':
         setSelectedPlantId(entry.id);
@@ -76,63 +84,32 @@ const App: Component = () => {
     }
   }
 
-  const searchGroups = createMemo<SearchEntryGroup[]>(() => {
-    const _plants = plants() ?? [];
-    const _tags = tags() ?? {};
-    const sponsors = new Set<string>();
-    const plantEntries: SearchEntry[] = _plants.map(plant => {
-      if (plant.sponsor) {
-        sponsors.add(plant.sponsor);
+  const addMeasureNode = (measureNode: MeasureNode) => {
+    const _measureNode = measureNodeStart();
+
+    if (!_measureNode) {
+      setMeasureNodeStart(measureNode);
+      return;
+    }
+
+    addMeasure(_measureNode, measureNode);
+    setMeasureNodeStart(undefined);
+  }
+
+  const onPlantClicked = (plantId: string) => {
+    if (tapeActive()) {
+      const plant = plants().find(p => p.id === plantId);
+
+      if (!plant) {
+        return;
       }
 
-      return ({
-        id: plant.id,
-        primaryText: plant.code,
-        secondaryText: plant.commonName,
-        tertiaryText: plant.sponsor,
-        searchTerms: normalizeSearchTerms([plant.code, plant.fullLatinName, plant.commonName].concat(plant.sponsor ? [plant.sponsor] : []))
-      });
-    });
-    const sponsorEntries: SearchEntry[] = [...sponsors].map(sponsor => ({
-      id: sponsor,
-      primaryText: sponsor,
-      searchTerms: normalizeSearchTerms([sponsor])
-    }));
+      addMeasureNode({ id: plantId, position: plant.position });
+      return;
+    }
 
-    return [
-      {
-        id: 'tags',
-        headerText: 'Tags',
-        entries: [
-          {
-            id: 'sponsored',
-            primaryText: 'Parrainé',
-            searchTerms: ['parraine']
-          },
-          {
-            id: 'hasNote',
-            primaryText: 'Noté',
-            searchTerms: ['note']
-          },
-          ...Object.entries(_tags).map<SearchEntry>(([tagId, label]) => ({
-            id: tagId,
-            primaryText: label,
-            searchTerms: normalizeSearchTerms([label])
-          }))
-        ]
-      },
-      {
-        id: 'sponsors',
-        headerText: 'Parrains/Marraines',
-        entries: sponsorEntries
-      },
-      {
-        id: 'plants',
-        headerText: 'Plantes',
-        entries: plantEntries
-      }
-    ]
-  });
+    setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId);
+  }
 
   const selectedPlant = createMemo<Plant | undefined>(() => {
     if (!selectedPlantId() || !plants()) {
@@ -149,12 +126,17 @@ const App: Component = () => {
       return undefined;
     }
 
-    return notes().find(n => n.objectId === _selectedPlantId) ?? {objectId: _selectedPlantId, tags: [], content: ''};
+    return notes().find(n => n.objectId === _selectedPlantId) ?? { objectId: _selectedPlantId, tags: [], content: '' };
   });
 
   const openNoteDialog = (e: MouseEvent) => {
     e.stopPropagation();
     setNoteDialogOpen(true);
+  }
+
+  const onTapeClicked = () => {
+    setTapeActive(!tapeActive());
+    setSelectedPlantId(undefined);
   }
 
   return (
@@ -164,8 +146,8 @@ const App: Component = () => {
           <AppSearch onEntryClick={onEntryClick} groups={searchGroups()} />
         </Toolbar>
         {filters().length > 0 && <Toolbar disableGutters={true}>
-            <Filters filters={filters()} onFilterDelete={removeFilter} />
-          </Toolbar>}
+          <Filters filters={filters()} onFilterDelete={removeFilter} />
+        </Toolbar>}
       </AppBar>
       <EditorMap setMap={setMap} viewport={viewport()} setViewport={setViewport}>
         <StaticMapFeatures />
@@ -173,11 +155,12 @@ const App: Component = () => {
         <Plants plants={plants() ?? []}
           showCanopy={showCanopy()}
           show3D={show3D()}
-          onPlantClick={(plantId: string) => setSelectedPlantId(plantId === selectedPlantId() ? undefined : plantId)}
+          onPlantClick={onPlantClicked}
           selectedPlantId={selectedPlantId()}
           filters={filters()}
           notes={notes()}
         />
+        <Measures graph={graph()} onMeasureClick={(edge) => removeMeasure(edge)} />
       </EditorMap>
       <FixedFab sx={{ right: '16px', bottom: '72px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'primary'}>
         {showCanopy() ? <Park /> : <ModeStandby />}
@@ -185,10 +168,13 @@ const App: Component = () => {
       <FixedFab sx={{ right: '16px', bottom: '144px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'primary'}>
         3D
       </FixedFab>
-      <FixedFab sx={{ right: '24px', top: 72 + (filters().length > 0 ? 56 : 0) }} onClick={() => resetViewport()} size='small' color='primary'>
-        <Navigation sx={{ transform: `rotate(${-viewport().bearing}deg)`}} />
+      <FixedFab sx={{ right: '16px', bottom: '216px' }} onClick={onTapeClicked} color={tapeActive() ? 'secondary' : 'primary'}>
+        <SquareFoot />
       </FixedFab>
-      <SelectionDrawer title={selectedPlant()?.code} placeholder='Sélectionnez une plante' actions={selectedPlant() && 
+      <FixedFab sx={{ right: '24px', top: 72 + (filters().length > 0 ? 56 : 0) }} onClick={() => resetBearing()} size='small' color='primary'>
+        <Navigation sx={{ transform: `rotate(${-viewport().bearing}deg)` }} />
+      </FixedFab>
+      <SelectionDrawer title={selectedPlant()?.code} placeholder={tapeActive() ? 'Sélectionnez plusieurs arbres' : 'Sélectionnez un arbre'} actions={selectedPlant() &&
         <>
           <IconButton onClick={openNoteDialog} sx={{ width: 56 }}>
             <NoteAlt />
