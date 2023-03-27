@@ -101,7 +101,7 @@ const AppSearch: Component<Props> = (props) => {
   const debouncedWorkerInput = createMemo<[normalizedTerm: string, groups: SearchEntryGroup[]]>((p) => {
     const value = workerInput();
     return scheduledSearch() ? value : p;
-  });
+  }, ['', props.groups]);
 
   createSignaledWorker({
     input: debouncedWorkerInput,

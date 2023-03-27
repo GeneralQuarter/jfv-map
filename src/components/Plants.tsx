@@ -94,14 +94,14 @@ const Plants: Component<Props> = (props) => {
       <Layer style={{
         type: 'symbol',
         layout: {
-          'text-field': ['get', 'code']
+          'text-field': ['get', 'code'],
         },
         paint: {
           'text-halo-color': '#fffbec',
           'text-halo-width': 2,
           'text-opacity': ['step', ['zoom'], 0, 19, 1] // under 19 -> hidden, above 19 -> shown
         },
-      }} />
+      }} visible={!props.show3D} />
     </Source>
   )
 }

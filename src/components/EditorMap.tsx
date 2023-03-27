@@ -1,4 +1,4 @@
-import { Component, createSignal, JSX } from 'solid-js';
+import { Component, createEffect, createSignal, JSX, Setter } from 'solid-js';
 import MapGL, { Viewport } from 'solid-map-gl';
 import * as maplibre from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -7,14 +7,11 @@ import MapSetter from './MapSetter';
 type Props = {
   children: JSX.Element,
   setMap: (map: maplibre.Map) => void;
+  viewport: Viewport;
+  setViewport: Setter<Viewport>;
 }
 
 const EditorMap: Component<Props> = (props) => {
-  const [viewport, setViewport] = createSignal({
-    center: [0.88279, 46.37926],
-    zoom: 17,
-  } as Viewport);
-
   return (
     <MapGL
       mapLib={maplibre}
@@ -27,8 +24,8 @@ const EditorMap: Component<Props> = (props) => {
           }]
         }
       }}
-      viewport={viewport()}
-      onViewportChange={(evt: Viewport) => setViewport(evt)}
+      viewport={props.viewport}
+      onViewportChange={(evt: Viewport) => props.setViewport(evt)}
       debug={true}
     >
       <MapSetter setMap={props.setMap} />

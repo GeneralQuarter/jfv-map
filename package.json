@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "rimraf dev-dist && cross-env DEBUG=vite-plugin-pwa:* SW_DEV=true vite --force",
+    "dev": "vite",
     "start-sw": "npm run build-sw && npm run serve",
     "build-sw": "rimraf dist && cross-env DEBUG=vite-plugin-pwa:* BASE_URL=/ SOURCE_MAP=true SW=true vite build",
     "build": "vite build",
