@@ -21,7 +21,8 @@ export function createCachedApiCall<T extends object>(name: string, fetchData: (
   }
 
   onMount(() => {
-    setData(reconcile(getCached()));
+    const cached = getCached() ?? initialData;
+    setData(reconcile(cached));
 
     if (!navigator.onLine || !import.meta.env.PROD) {
       return;
