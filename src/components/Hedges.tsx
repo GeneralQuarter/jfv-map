@@ -11,10 +11,15 @@ type Props = {
 const hedgesToFeatureCollection = (hedges: Hedge[]): FeatureCollection => {
   return {
     type: 'FeatureCollection',
-    features: hedges.map(hedge => buffer({
-      type: 'LineString',
-      coordinates: hedge.coords.map(coords => [coords[1], coords[0]]),
-    }, 1.2 / 1000))
+    features: hedges.map(hedge => ({
+      ...buffer({
+        type: 'LineString',
+        coordinates: hedge.coords.map(coords => [coords[1], coords[0]]),
+      }, 0.8 / 1000),
+      properties: {
+        label: hedge.name,
+      }
+    })),
   }
 }
 
@@ -28,6 +33,23 @@ const Hedges: Component<Props> = (props) => {
         'fill-opacity': 0.3
       }
     }}
+    />
+    <Layer 
+      id='hedge-names'
+      style={{
+        type: 'symbol',
+        layout: {
+          'text-field': ['get', 'label'],
+          'symbol-placement': 'line',
+          'text-offset': [0, 1],
+          'symbol-spacing': 180,
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': 'brown',
+          'text-opacity': ['step', ['zoom'], 0, 19, 1],
+        }
+      }}
     />
   </Source>);
 }

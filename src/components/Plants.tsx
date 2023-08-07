@@ -1,12 +1,13 @@
 import { Plant } from '@/models/plant';
-import { Component, createMemo, onCleanup } from 'solid-js';
-import { Source, Layer, useMap } from 'solid-map-gl';
+import { Component, createMemo, onCleanup, onMount } from 'solid-js';
+import { Source, Layer } from 'solid-map-gl';
 import type { FeatureCollection } from 'geojson';
 import circle from '@turf/circle';
 import { MapLayerMouseEvent } from 'maplibre-gl';
 import { Filter } from '@/lib/create-filters';
 import theme from '@/theme';
 import { Note } from '@/models/note';
+import { useMap } from '@/lib/use-map';
 
 const plantTagged = (plant: Plant, filters: Filter[], notes: Note[]): boolean => {
   return (plant.sponsor && filters.some(f => f.type === 'tag' && f.id === 'sponsored')) 
@@ -48,7 +49,11 @@ const layerId = 'plants';
 
 const Plants: Component<Props> = (props) => {
   const plantFeatureCollection = createMemo(() => plantsToFeatureCollection(props.plants, props.showCanopy, props.selectedPlantId, props.filters, props.notes));
-  const [map] = useMap();
+  const map = useMap();
+
+  onMount(() => {
+    map().setLayoutProperty('3d-plants', 'visibility', 'none');
+  })
 
   onCleanup(() => {
     const delegateListeners = map()?._delegatedListeners.click.filter(l => l.layer === layerId);
@@ -80,17 +85,14 @@ const Plants: Component<Props> = (props) => {
           'line-color': 'gray'
         }
       }} />
-      <Layer style={{
+      <Layer id='3d-plants' style={{
         type: 'fill-extrusion',
-        layout: {
-          visibility: props.show3D ? 'visible' : 'none'
-        },
         paint: {
           'fill-extrusion-height': ['get', 'height'],
           'fill-extrusion-color': 'gray',
           'fill-extrusion-opacity': 1
         }
-      }} />
+      }} visible={props.show3D} />
       <Layer id='plant-codes' style={{
         type: 'symbol',
         layout: {

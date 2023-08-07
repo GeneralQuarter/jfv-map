@@ -1,9 +1,10 @@
 import { MeasureGraph } from '@/models/measure-graph';
 import { Component, createMemo, onCleanup } from 'solid-js';
 import type { FeatureCollection, Feature, LineString } from 'geojson';
-import { Layer, Source, useMap } from 'solid-map-gl';
+import { Layer, Source } from 'solid-map-gl';
 import length from '@turf/length';
 import { MapLayerMouseEvent } from 'maplibre-gl';
+import { useMap } from '@/lib/use-map';
 
 type Props = {
   graph: MeasureGraph;
@@ -40,7 +41,7 @@ const measureGraphToFeatureCollection = (graph: MeasureGraph): FeatureCollection
 
 const Measures: Component<Props> = (props) => {
   const measureFeatureCollection = createMemo(() => measureGraphToFeatureCollection(props.graph));
-  const [map] = useMap();
+  const map = useMap();
 
   onCleanup(() => {
     const delegateListeners = map()?._delegatedListeners.click.filter(l => l.layer === measureLayerId);
@@ -78,7 +79,6 @@ const Measures: Component<Props> = (props) => {
       }}
       onClick={(evt: MapLayerMouseEvent) => {
         const clickedMeasureFeature = evt.features?.[0];
-        console.log(clickedMeasureFeature);
         clickedMeasureFeature && props.onMeasureClick([clickedMeasureFeature.properties.aId, clickedMeasureFeature.properties.bId]);
       }}
     />

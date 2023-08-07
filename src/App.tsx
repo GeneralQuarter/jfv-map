@@ -16,7 +16,6 @@ import { Tags } from '@/models/tags';
 import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
-import { Map } from 'maplibre-gl';
 import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot } from '@suid/icons-material';
 import { Hedge } from './models/hedge';
 import Hedges from './components/Hedges';
@@ -31,6 +30,10 @@ import type { SearchEntry } from './models/search-entry';
 import createMeasureGraph from './lib/create-measure-graph';
 import { MeasureNode } from './models/measure-graph';
 import Measures from './components/Measures';
+import { getRectangles } from './lib/api/get-rectangles';
+import { Rectangle } from './models/rectangle';
+import Rectangles from './components/Rectangles';
+import { useMap } from './lib/use-map';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -38,11 +41,12 @@ const FixedFab = styled(Fab)({
 });
 
 const App: Component = () => {
-  const [map, setMap] = createSignal<Map | undefined>(undefined);
+  const map = useMap();
   const [viewport, setViewport] = createSignal<Viewport>({ center: [0.88279, 46.37926], zoom: 17 });
-  const [plants] = createCachedApiCall<Plant[]>('plants', getPlantsWithPosition);
-  const [tags] = createCachedApiCall<Tags>('tags', getTags);
-  const [hedges] = createCachedApiCall<Hedge[]>('hedges', getHedges);
+  const [plants] = createCachedApiCall<Plant[]>('plants', getPlantsWithPosition, []);
+  const [tags] = createCachedApiCall<Tags>('tags', getTags, {});
+  const [hedges] = createCachedApiCall<Hedge[]>('hedges', getHedges, []);
+  const [rectangles] = createCachedApiCall<Rectangle[]>('rectangles', getRectangles, []);
   const [notes, noteTags, upsertNote, clearNote] = createNotes();
   const [graph, addMeasure, removeMeasure] = createMeasureGraph();
   const [measureNodeStart, setMeasureNodeStart] = createSignal<MeasureNode | undefined>(undefined);
@@ -98,7 +102,7 @@ const App: Component = () => {
 
   const onPlantClicked = (plantId: string) => {
     if (tapeActive()) {
-      const plant = plants().find(p => p.id === plantId);
+      const plant = plants.find(p => p.id === plantId);
 
       if (!plant) {
         return;
@@ -112,11 +116,11 @@ const App: Component = () => {
   }
 
   const selectedPlant = createMemo<Plant | undefined>(() => {
-    if (!selectedPlantId() || !plants()) {
+    if (!selectedPlantId()) {
       return undefined;
     }
 
-    return plants().find(plant => plant.id === selectedPlantId());
+    return plants.find(plant => plant.id === selectedPlantId());
   });
 
   const note = createMemo<Note | undefined>(() => {
@@ -149,10 +153,11 @@ const App: Component = () => {
           <Filters filters={filters()} onFilterDelete={removeFilter} />
         </Toolbar>}
       </AppBar>
-      <EditorMap setMap={setMap} viewport={viewport()} setViewport={setViewport}>
+      <EditorMap viewport={viewport()} setViewport={setViewport}>
         <StaticMapFeatures />
-        <Hedges hedges={hedges() ?? []} />
-        <Plants plants={plants() ?? []}
+        <Hedges hedges={hedges ?? []} />
+        <Rectangles rectangles={rectangles ?? []} />
+        <Plants plants={plants ?? []}
           showCanopy={showCanopy()}
           show3D={show3D()}
           onPlantClick={onPlantClicked}
@@ -181,7 +186,7 @@ const App: Component = () => {
           </IconButton>
         </>
       }>
-        {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags() ?? {}} />}
+        {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags ?? {}} />}
       </SelectionDrawer>
       <NoteDialog title={selectedPlant()?.code} open={noteDialogOpen()} setOpen={setNoteDialogOpen} note={note()} existingTags={noteTags()} onNoteUpdate={upsertNote} onNoteClear={clearNote} />
       <ReloadPrompt />

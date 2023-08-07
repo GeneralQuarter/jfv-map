@@ -1,5 +1,5 @@
 import type { MeasureGraph, MeasureNode } from '@/models/measure-graph';
-import { Accessor, createEffect, createSignal } from 'solid-js';
+import { Accessor, createSignal } from 'solid-js';
 
  type CreateMeasureGraph = [
   graph: Accessor<MeasureGraph>,
@@ -74,10 +74,6 @@ export default function createMeasureGraph(): CreateMeasureGraph {
 
     setGraph(newGraph);
   }
-
-  createEffect(() => {
-    console.log(graph());
-  });
 
   return [graph, addMeasure, removeMeasure];
 }

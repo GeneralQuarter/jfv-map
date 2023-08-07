@@ -4,13 +4,11 @@ import { Tags } from '@/models/tags';
 import { Accessor, createMemo } from 'solid-js';
 import { normalizeSearchTerms } from './normalize-search-term';
 
-export default function createSearchGroups(plants: Accessor<Plant[]>, tags: Accessor<Tags>): Accessor<SearchEntryGroup[]> {
+export default function createSearchGroups(plants: Plant[], tags: Tags): Accessor<SearchEntryGroup[]> {
   return createMemo(() => {
-    const _plants = plants() ?? [];
-    const _tags = tags() ?? {};
     const sponsors = new Set<string>();
 
-    const plantEntries: SearchEntry[] = _plants.map(plant => {
+    const plantEntries: SearchEntry[] = plants.map(plant => {
       if (plant.sponsor) {
         sponsors.add(plant.sponsor);
       }
@@ -45,7 +43,7 @@ export default function createSearchGroups(plants: Accessor<Plant[]>, tags: Acce
             primaryText: 'Noté',
             searchTerms: ['note']
           },
-          ...Object.entries(_tags).map<SearchEntry>(([tagId, label]) => ({
+          ...Object.entries(tags).map<SearchEntry>(([tagId, label]) => ({
             id: tagId,
             primaryText: label,
             searchTerms: normalizeSearchTerms([label])
