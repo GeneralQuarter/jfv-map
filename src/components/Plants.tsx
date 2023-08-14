@@ -39,6 +39,7 @@ type Props = {
   plants: Plant[];
   showCanopy: boolean;
   show3D: boolean;
+  showLabels: boolean;
   onPlantClick: (plantId: string) => void;
   selectedPlantId: string;
   filters: Filter[];
@@ -103,7 +104,7 @@ const Plants: Component<Props> = (props) => {
           'text-halo-width': 2,
           'text-opacity': ['step', ['zoom'], 0, 19, 1] // under 19 -> hidden, above 19 -> shown
         },
-      }} visible={!props.show3D} />
+      }} visible={!props.show3D && props.showLabels} />
     </Source>
   )
 }

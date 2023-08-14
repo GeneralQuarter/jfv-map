@@ -5,4 +5,5 @@ export interface Hedge {
     lat: number,
     lon: number
   ][];
+  wateredAt?: string;
 }

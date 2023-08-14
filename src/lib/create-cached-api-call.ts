@@ -1,8 +1,9 @@
 import { onMount } from 'solid-js';
-import { createStore, reconcile } from 'solid-js/store';
+import { type SetStoreFunction, createStore, reconcile } from 'solid-js/store';
 
 type CreateCachedApiCall<T> = [
   data: T,
+  setData: SetStoreFunction<T>,
 ]
  
 export function createCachedApiCall<T extends object>(name: string, fetchData: () => Promise<T>, initialData: T): CreateCachedApiCall<T> {
@@ -24,9 +25,9 @@ export function createCachedApiCall<T extends object>(name: string, fetchData: (
     const cached = getCached() ?? initialData;
     setData(reconcile(cached));
 
-    if (!navigator.onLine || !import.meta.env.PROD) {
-      return;
-    }
+    // if (!navigator.onLine || !import.meta.env.PROD) {
+    //   return;
+    // }
 
     fetchData().then(d => {
       localStorage.setItem(cacheKey, JSON.stringify(d));
@@ -34,5 +35,5 @@ export function createCachedApiCall<T extends object>(name: string, fetchData: (
     });
   });
 
-  return [data];
+  return [data, setData];
 }

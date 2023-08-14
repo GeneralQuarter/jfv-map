@@ -33,6 +33,7 @@
     "@turf/buffer": "^6.5.0",
     "@turf/circle": "^6.5.0",
     "@turf/length": "^6.5.0",
+    "date-fns": "^2.30.0",
     "mapbox-gl": "npm:empty-npm-package@^1.0.0",
     "maplibre-gl": "^3.2.2",
     "solid-js": "^1.7.9",

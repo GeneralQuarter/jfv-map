@@ -1,4 +1,4 @@
-import { AppBar, IconButton, styled, ThemeProvider, Toolbar } from '@suid/material';
+import { AppBar, Badge, CircularProgress, IconButton, Stack, styled, ThemeProvider, Toolbar, Typography } from '@suid/material';
 import { Fab } from '@suid/material';
 import { Component, createSignal, createMemo } from 'solid-js';
 import AppSearch from '@/components/AppSearch';
@@ -16,7 +16,7 @@ import { Tags } from '@/models/tags';
 import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
-import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot } from '@suid/icons-material';
+import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot, Shower, Close, Send } from '@suid/icons-material';
 import { Hedge } from './models/hedge';
 import Hedges from './components/Hedges';
 import createNotes from './lib/create-notes';
@@ -34,6 +34,8 @@ import { getRectangles } from './lib/api/get-rectangles';
 import { Rectangle } from './models/rectangle';
 import Rectangles from './components/Rectangles';
 import { useMap } from './lib/use-map';
+import { createStore, produce } from 'solid-js/store';
+import WaterSubmit from './components/WaterSubmit';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -45,7 +47,7 @@ const App: Component = () => {
   const [viewport, setViewport] = createSignal<Viewport>({ center: [0.88279, 46.37926], zoom: 17 });
   const [plants] = createCachedApiCall<Plant[]>('plants', getPlantsWithPosition, []);
   const [tags] = createCachedApiCall<Tags>('tags', getTags, {});
-  const [hedges] = createCachedApiCall<Hedge[]>('hedges', getHedges, []);
+  const [hedges, setHedges] = createCachedApiCall<Hedge[]>('hedges', getHedges, []);
   const [rectangles] = createCachedApiCall<Rectangle[]>('rectangles', getRectangles, []);
   const [notes, noteTags, upsertNote, clearNote] = createNotes();
   const [graph, addMeasure, removeMeasure] = createMeasureGraph();
@@ -56,6 +58,9 @@ const App: Component = () => {
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
   const [filters, addFilter, removeFilter] = createFilters([]);
   const [noteDialogOpen, setNoteDialogOpen] = createSignal<boolean>(false);
+  const [waterModeActive, setWaterModeActive] = createSignal<boolean>(false);
+  const [waterSelectedIds, setWaterSelectedIds] = createStore<string[]>([]);
+  const [submitWater, setSubmitWater] = createSignal<boolean>(false);
   const searchGroups = createSearchGroups(plants, tags);
 
   create3DMapTransition(show3D, viewport, map);
@@ -101,6 +106,10 @@ const App: Component = () => {
   }
 
   const onPlantClicked = (plantId: string) => {
+    if (waterModeActive()) {
+      return;
+    }
+
     if (tapeActive()) {
       const plant = plants.find(p => p.id === plantId);
 
@@ -143,23 +152,96 @@ const App: Component = () => {
     setSelectedPlantId(undefined);
   }
 
+  const onHedgeClicked = (hedgeId: string) => {
+    if (waterModeActive()) {
+      setWaterSelectedIds(produce<string[]>(p => {
+        const index = p.indexOf(hedgeId);
+
+        if (index === -1) {
+          p.push(hedgeId);
+        } else {
+          p.splice(index, 1);
+        }
+      }));
+    }
+  }
+
+  const drawerPlaceholderText = () => {
+    if (waterModeActive()) {
+      return 'Sélectionnez les haires arrosées';
+    }
+
+    if (tapeActive()) {
+      return 'Sélectionnez plusieurs arbres';
+    } 
+    
+    return 'Sélectionnez un arbre';
+  }
+
+  const waterSendClicked = () => {
+    if (submitWater()) {
+      return;
+    }
+
+    setSubmitWater(true);
+  }
+
+  const waterSubmitted = (result: 'Success' | 'Cancelled') => {
+    if (result === 'Success') {
+      setHedges(produce<Hedge[]>(hs => {
+        for (const h of hs) {
+          if (!waterSelectedIds.includes(h.id)) {
+            continue;
+          }
+
+          h.wateredAt = new Date().toISOString();
+        }
+      }))
+      setWaterSelectedIds([]);
+    }
+
+    setSubmitWater(false);
+  }
+
   return (
     <ThemeProvider theme={theme}>
-      <AppBar position='fixed'>
+      <AppBar position='fixed' color={waterModeActive() ? 'secondary' : 'primary'}>
+        {waterModeActive() ? 
+        <>
+          <Toolbar>
+            <IconButton size='large' edge='start' color='inherit' aria-label='close' onClick={() => setWaterModeActive(false)}>
+              <Close />
+            </IconButton>
+            <Typography sx={{ flexGrow: 1 }}>Arrossage</Typography>
+            <IconButton size='large' edge='end' color='inherit' aria-label='send' onClick={waterSendClicked} disabled={submitWater()}>
+              <Badge badgeContent={waterSelectedIds.length} color='primary'>
+                <Send />
+              </Badge>
+              {submitWater() && <CircularProgress color='inherit' size={40} sx={{ position: 'absolute' }} />}
+            </IconButton>
+          </Toolbar>
+        </>
+       : <>
         <Toolbar>
           <AppSearch onEntryClick={onEntryClick} groups={searchGroups()} />
         </Toolbar>
         {filters().length > 0 && <Toolbar disableGutters={true}>
           <Filters filters={filters()} onFilterDelete={removeFilter} />
         </Toolbar>}
+       </>
+       }
       </AppBar>
       <EditorMap viewport={viewport()} setViewport={setViewport}>
         <StaticMapFeatures />
-        <Hedges hedges={hedges ?? []} />
+        <Hedges hedges={hedges ?? []} 
+          onHedgeClick={onHedgeClicked} waterSelectedIds={waterSelectedIds} 
+          waterModeActive={waterModeActive()}
+        />
         <Rectangles rectangles={rectangles ?? []} />
         <Plants plants={plants ?? []}
           showCanopy={showCanopy()}
           show3D={show3D()}
+          showLabels={!waterModeActive()}
           onPlantClick={onPlantClicked}
           selectedPlantId={selectedPlantId()}
           filters={filters()}
@@ -167,19 +249,22 @@ const App: Component = () => {
         />
         <Measures graph={graph()} onMeasureClick={(edge) => removeMeasure(edge)} />
       </EditorMap>
-      <FixedFab sx={{ right: '16px', bottom: '72px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'primary'}>
+      <FixedFab sx={{ right: '16px', bottom: '72px' }} onClick={() => setShowCanopy(!showCanopy())} color={showCanopy() ? 'secondary' : 'primary'} size='small'>
         {showCanopy() ? <Park /> : <ModeStandby />}
       </FixedFab>
-      <FixedFab sx={{ right: '16px', bottom: '144px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'primary'}>
+      <FixedFab sx={{ right: '16px', bottom: '128px' }} onClick={() => setShow3D(!show3D())} color={show3D() ? 'secondary' : 'primary'} size='small'>
         3D
       </FixedFab>
-      <FixedFab sx={{ right: '16px', bottom: '216px' }} onClick={onTapeClicked} color={tapeActive() ? 'secondary' : 'primary'}>
+      <FixedFab sx={{ right: '16px', bottom: '184px' }} onClick={onTapeClicked} color={tapeActive() ? 'secondary' : 'primary'} size='small'>
         <SquareFoot />
       </FixedFab>
-      <FixedFab sx={{ right: '24px', top: 72 + (filters().length > 0 ? 56 : 0) }} onClick={() => resetBearing()} size='small' color='primary'>
+      <FixedFab sx={{ right: '16px', bottom: '240px' }} onClick={() => setWaterModeActive(!waterModeActive())} color={waterModeActive() ? 'secondary' : 'primary'} size='small'>
+        <Shower />
+      </FixedFab>
+      <FixedFab sx={{ right: '16px', top: 72 + (filters().length > 0 ? 56 : 0) }} onClick={() => resetBearing()} size='small' color='primary'>
         <Navigation sx={{ transform: `rotate(${-viewport().bearing}deg)` }} />
       </FixedFab>
-      <SelectionDrawer title={selectedPlant()?.code} placeholder={tapeActive() ? 'Sélectionnez plusieurs arbres' : 'Sélectionnez un arbre'} actions={selectedPlant() &&
+      <SelectionDrawer title={selectedPlant()?.code} placeholder={drawerPlaceholderText()} actions={selectedPlant() &&
         <>
           <IconButton onClick={openNoteDialog} sx={{ width: 56 }}>
             <NoteAlt />
@@ -190,6 +275,7 @@ const App: Component = () => {
       </SelectionDrawer>
       <NoteDialog title={selectedPlant()?.code} open={noteDialogOpen()} setOpen={setNoteDialogOpen} note={note()} existingTags={noteTags()} onNoteUpdate={upsertNote} onNoteClear={clearNote} />
       <ReloadPrompt />
+      {submitWater() && <WaterSubmit waterSelectedIds={waterSelectedIds} onFinish={waterSubmitted}/>}
     </ThemeProvider>
   );
 };
