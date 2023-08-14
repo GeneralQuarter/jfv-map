@@ -1,6 +1,6 @@
 import { AppBar, Badge, CircularProgress, IconButton, Stack, styled, ThemeProvider, Toolbar, Typography } from '@suid/material';
 import { Fab } from '@suid/material';
-import { Component, createSignal, createMemo } from 'solid-js';
+import { Component, createSignal, createMemo, createEffect, on } from 'solid-js';
 import AppSearch from '@/components/AppSearch';
 import EditorMap from '@/components/EditorMap';
 import Filters from '@/components/Filters';
@@ -202,6 +202,12 @@ const App: Component = () => {
 
     setSubmitWater(false);
   }
+
+  createEffect(on(waterModeActive, (waterMode) => {
+    if (!waterMode) {
+      setWaterSelectedIds([]);
+    }
+  }));
 
   return (
     <ThemeProvider theme={theme}>
