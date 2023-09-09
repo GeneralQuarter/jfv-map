@@ -23,7 +23,7 @@ const colorFromWateredAt = (wateredAt?: string) => {
 
   if (difference > 7) {
     return 'red';
-  } else if (difference > 3) {
+  } else if (difference > 4) {
     return 'orange';
   }
 
