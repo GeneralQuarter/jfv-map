@@ -21,9 +21,9 @@ const colorFromWateredAt = (wateredAt?: string) => {
   const wateredAtDate = new Date(wateredAt);
   const difference = differenceInCalendarDays(new Date(), wateredAtDate);
 
-  if (difference > 7) {
+  if (difference > 16) {
     return 'red';
-  } else if (difference > 5) {
+  } else if (difference > 8) {
     return 'orange';
   }
 
