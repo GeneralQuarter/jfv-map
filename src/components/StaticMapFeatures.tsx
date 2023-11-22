@@ -26,6 +26,25 @@ const StaticMapFeatures: Component = () => {
       />
       <Layer
         style={{
+          type: 'line',
+          paint: {
+            'line-color': 'gray'
+          },
+          filter: ['==', 'id', 'fences']
+        }}
+      />
+      <Layer
+        style={{
+          type: 'line',
+          paint: {
+            'line-color': 'gray',
+            'line-dasharray': [2, 2]
+          },
+          filter: ['==', 'id', 'doors']
+        }}
+      />
+      <Layer
+        style={{
           type: 'fill',
           paint: {
             'fill-color': 'blue',
