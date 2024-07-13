@@ -25,9 +25,9 @@ export function createCachedApiCall<T extends object>(name: string, fetchData: (
     const cached = getCached() ?? initialData;
     setData(reconcile(cached));
 
-    if (!navigator.onLine || !import.meta.env.PROD) {
-      return;
-    }
+    // if (!navigator.onLine || !import.meta.env.PROD) {
+    //   return;
+    // }
 
     fetchData().then(d => {
       localStorage.setItem(cacheKey, JSON.stringify(d));
