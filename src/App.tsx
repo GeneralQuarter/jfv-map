@@ -16,12 +16,9 @@ import { Tags } from '@/models/tags';
 import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
-import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot, Shower, Close, Send } from '@suid/icons-material';
+import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot, Shower, Close, Send, HeartBroken } from '@suid/icons-material';
 import { Hedge } from './models/hedge';
 import Hedges from './components/Hedges';
-import createNotes from './lib/create-notes';
-import { Note } from './models/note';
-import NoteDialog from './components/NoteDialog';
 import ReloadPrompt from './components/ReloadPrompt';
 import type { Viewport } from 'solid-map-gl';
 import create3DMapTransition from './lib/create-3d-map-transition';
@@ -36,6 +33,7 @@ import Rectangles from './components/Rectangles';
 import { useMap } from './lib/use-map';
 import { createStore, produce } from 'solid-js/store';
 import WaterSubmit from './components/WaterSubmit';
+import DeadPlantSubmit from './components/DeadPlantSubmit';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -45,11 +43,10 @@ const FixedFab = styled(Fab)({
 const App: Component = () => {
   const map = useMap();
   const [viewport, setViewport] = createSignal<Viewport>({ center: [0.88279, 46.37926], zoom: 17 });
-  const [plants] = createCachedApiCall<Plant[]>('plants', getPlantsWithPosition, []);
+  const [plants, setPlants] = createCachedApiCall<Plant[]>('plants', getPlantsWithPosition, []);
   const [tags] = createCachedApiCall<Tags>('tags', getTags, {});
   const [hedges, setHedges] = createCachedApiCall<Hedge[]>('hedges', getHedges, []);
   const [rectangles] = createCachedApiCall<Rectangle[]>('rectangles', getRectangles, []);
-  const [notes, noteTags, upsertNote, clearNote] = createNotes();
   const [graph, addMeasure, removeMeasure] = createMeasureGraph();
   const [measureNodeStart, setMeasureNodeStart] = createSignal<MeasureNode | undefined>(undefined);
   const [showCanopy, setShowCanopy] = createSignal<boolean>(false);
@@ -57,10 +54,10 @@ const App: Component = () => {
   const [tapeActive, setTapeActive] = createSignal<boolean>(false);
   const [selectedPlantId, setSelectedPlantId] = createSignal<string | undefined>(undefined);
   const [filters, addFilter, removeFilter] = createFilters([]);
-  const [noteDialogOpen, setNoteDialogOpen] = createSignal<boolean>(false);
   const [waterModeActive, setWaterModeActive] = createSignal<boolean>(false);
   const [waterSelectedIds, setWaterSelectedIds] = createStore<string[]>([]);
   const [submitWater, setSubmitWater] = createSignal<boolean>(false);
+  const [submitDeadPlant, setSubmitDeadPlant] = createSignal<boolean>(false);
   const searchGroups = createSearchGroups(plants, tags);
 
   create3DMapTransition(show3D, viewport, map);
@@ -132,21 +129,6 @@ const App: Component = () => {
     return plants.find(plant => plant.id === selectedPlantId());
   });
 
-  const note = createMemo<Note | undefined>(() => {
-    const _selectedPlantId = selectedPlantId();
-
-    if (!_selectedPlantId) {
-      return undefined;
-    }
-
-    return notes().find(n => n.objectId === _selectedPlantId) ?? { objectId: _selectedPlantId, tags: [], content: '' };
-  });
-
-  const openNoteDialog = (e: MouseEvent) => {
-    e.stopPropagation();
-    setNoteDialogOpen(true);
-  }
-
   const onTapeClicked = () => {
     setTapeActive(!tapeActive());
     setSelectedPlantId(undefined);
@@ -178,6 +160,11 @@ const App: Component = () => {
     return 'Sélectionnez un arbre';
   }
 
+  const deadPlantClicked = (e: MouseEvent) => {
+    e.stopPropagation();
+    setSubmitDeadPlant(true);
+  }
+
   const waterSendClicked = () => {
     if (submitWater()) {
       return;
@@ -201,6 +188,22 @@ const App: Component = () => {
     }
 
     setSubmitWater(false);
+  }
+
+  const deadPlantSubmitted = (result: 'Success' | 'Cancelled') => {
+    setSubmitDeadPlant(false);
+
+    if (result === 'Success') {
+      const deletedPlantId = selectedPlantId();
+      setPlants(produce<Plant[]>(ps => {
+        const idx = ps.findIndex(p => p.id == deletedPlantId);
+
+        if (idx !== -1) {
+          ps.splice(idx, 1);
+        }
+      }));
+      setSelectedPlantId(undefined);
+    }
   }
 
   createEffect(on(waterModeActive, (waterMode) => {
@@ -251,7 +254,6 @@ const App: Component = () => {
           onPlantClick={onPlantClicked}
           selectedPlantId={selectedPlantId()}
           filters={filters()}
-          notes={notes()}
         />
         <Measures graph={graph()} onMeasureClick={(edge) => removeMeasure(edge)} />
       </EditorMap>
@@ -272,16 +274,17 @@ const App: Component = () => {
       </FixedFab>
       <SelectionDrawer title={selectedPlant()?.code} placeholder={drawerPlaceholderText()} actions={selectedPlant() &&
         <>
-          <IconButton onClick={openNoteDialog} sx={{ width: 56 }}>
-            <NoteAlt />
+          <IconButton sx={{ width: 56 }} color="error" onClick={deadPlantClicked} disabled={submitDeadPlant()}>
+            <HeartBroken />
+            {submitDeadPlant() && <CircularProgress color='inherit' size={40} sx={{ position: 'absolute' }} />}
           </IconButton>
         </>
       }>
         {selectedPlant() && <PlantDetails plant={selectedPlant()} tags={tags ?? {}} />}
       </SelectionDrawer>
-      <NoteDialog title={selectedPlant()?.code} open={noteDialogOpen()} setOpen={setNoteDialogOpen} note={note()} existingTags={noteTags()} onNoteUpdate={upsertNote} onNoteClear={clearNote} />
       <ReloadPrompt />
       {submitWater() && <WaterSubmit waterSelectedIds={waterSelectedIds} onFinish={waterSubmitted}/>}
+      {submitDeadPlant() && <DeadPlantSubmit plant={selectedPlant()} onFinish={deadPlantSubmitted}/>}
     </ThemeProvider>
   );
 };

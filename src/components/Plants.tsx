@@ -6,17 +6,15 @@ import circle from '@turf/circle';
 import { MapLayerMouseEvent } from 'maplibre-gl';
 import { Filter } from '@/lib/create-filters';
 import theme from '@/theme';
-import { Note } from '@/models/note';
 import { useMap } from '@/lib/use-map';
 
-const plantTagged = (plant: Plant, filters: Filter[], notes: Note[]): boolean => {
+const plantTagged = (plant: Plant, filters: Filter[]): boolean => {
   return (plant.sponsor && filters.some(f => f.type === 'tag' && f.id === 'sponsored')) 
-   || (notes.some(n => n.objectId === plant.id) && filters.some(f => f.type === 'tag' && f.id === 'hasNote'))
    || (filters.filter(f => f.type === 'sponsor').some(f => plant.sponsor === f.id))
    || (filters.filter(f => f.type === 'tag').some(f => plant.tags.includes(f.id)));
 }
 
-const plantsToFeatureCollection = (plants: Plant[], showCanopy: boolean, selectedPlantId: string, filters: Filter[], notes: Note[]): FeatureCollection => {
+const plantsToFeatureCollection = (plants: Plant[], showCanopy: boolean, selectedPlantId: string, filters: Filter[]): FeatureCollection => {
   return {
     type: 'FeatureCollection',
     features: plants.map(plant => circle(
@@ -27,7 +25,7 @@ const plantsToFeatureCollection = (plants: Plant[], showCanopy: boolean, selecte
           id: plant.id,
           code: plant.code,
           selected: selectedPlantId === plant.id,
-          tagged: plantTagged(plant, filters, notes),
+          tagged: plantTagged(plant, filters),
           height: plant.height,
         }
       }
@@ -43,13 +41,12 @@ type Props = {
   onPlantClick: (plantId: string) => void;
   selectedPlantId: string;
   filters: Filter[];
-  notes: Note[];
 }
 
 const layerId = 'plants';
 
 const Plants: Component<Props> = (props) => {
-  const plantFeatureCollection = createMemo(() => plantsToFeatureCollection(props.plants, props.showCanopy, props.selectedPlantId, props.filters, props.notes));
+  const plantFeatureCollection = createMemo(() => plantsToFeatureCollection(props.plants, props.showCanopy, props.selectedPlantId, props.filters));
   const map = useMap();
 
   onMount(() => {
@@ -57,7 +54,7 @@ const Plants: Component<Props> = (props) => {
   })
 
   onCleanup(() => {
-    const delegateListeners = map()?._delegatedListeners.click.filter(l => l.layer === layerId);
+    const delegateListeners = map()?._delegatedListeners.click.filter(l => l.layers.includes(layerId));
     for (const delegateListener of delegateListeners) {
       map()?.off('click', layerId, delegateListener.listener);
     }
