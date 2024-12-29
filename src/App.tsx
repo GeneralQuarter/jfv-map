@@ -1,4 +1,4 @@
-import { AppBar, Badge, CircularProgress, IconButton, Stack, styled, ThemeProvider, Toolbar, Typography } from '@suid/material';
+import { AppBar, Badge, CircularProgress, IconButton, styled, ThemeProvider, Toolbar, Typography } from '@suid/material';
 import { Fab } from '@suid/material';
 import { Component, createSignal, createMemo, createEffect, on } from 'solid-js';
 import AppSearch from '@/components/AppSearch';
@@ -16,7 +16,7 @@ import { Tags } from '@/models/tags';
 import getTags from '@/lib/api/get-tags';
 import SelectionDrawer from './components/SelectionDrawer';
 import PlantDetails from './components/PlantDetails';
-import { ModeStandby, Navigation, NoteAlt, Park, SquareFoot, Shower, Close, Send, HeartBroken } from '@suid/icons-material';
+import { ModeStandby, Navigation, Park, SquareFoot, Shower, Close, Send, HeartBroken, Grass } from '@suid/icons-material';
 import { Hedge } from './models/hedge';
 import Hedges from './components/Hedges';
 import ReloadPrompt from './components/ReloadPrompt';
@@ -34,6 +34,7 @@ import { useMap } from './lib/use-map';
 import { createStore, produce } from 'solid-js/store';
 import WaterSubmit from './components/WaterSubmit';
 import DeadPlantSubmit from './components/DeadPlantSubmit';
+import PlantPlantSubmit from './components/PlantPlantSubmit';
 
 const FixedFab = styled(Fab)({
   position: 'absolute',
@@ -58,6 +59,7 @@ const App: Component = () => {
   const [waterSelectedIds, setWaterSelectedIds] = createStore<string[]>([]);
   const [submitWater, setSubmitWater] = createSignal<boolean>(false);
   const [submitDeadPlant, setSubmitDeadPlant] = createSignal<boolean>(false);
+  const [submitPlantPlant, setSubmitPlantPlant] = createSignal<boolean>(false);
   const searchGroups = createSearchGroups(plants, tags);
 
   create3DMapTransition(show3D, viewport, map);
@@ -129,6 +131,12 @@ const App: Component = () => {
     return plants.find(plant => plant.id === selectedPlantId());
   });
 
+  const selectedPlantPlanted = createMemo<boolean>(() => {
+    const _selectedPlant = selectedPlant();
+    
+    return _selectedPlant?.tags.includes('planted');
+  });
+
   const onTapeClicked = () => {
     setTapeActive(!tapeActive());
     setSelectedPlantId(undefined);
@@ -163,6 +171,11 @@ const App: Component = () => {
   const deadPlantClicked = (e: MouseEvent) => {
     e.stopPropagation();
     setSubmitDeadPlant(true);
+  }
+
+  const plantPlantClicked = (e: MouseEvent) => {
+    e.stopPropagation()
+    setSubmitPlantPlant(true);
   }
 
   const waterSendClicked = () => {
@@ -203,6 +216,22 @@ const App: Component = () => {
         }
       }));
       setSelectedPlantId(undefined);
+    }
+  }
+
+  const plantPlantSubmitted = (result: 'Success' | 'Cancelled') => {
+    setSubmitPlantPlant(false);
+
+    if (result === 'Success') {
+      const plantedPlantId = selectedPlantId();
+      setPlants(produce<Plant[]>(ps => {
+        const plant = ps.find(p => p.id == plantedPlantId);
+
+        if (plant) {
+          plant.tags.push('planted');
+          plant.plantedAt = new Date().toISOString();
+        }
+      }));
     }
   }
 
@@ -272,11 +301,18 @@ const App: Component = () => {
       <FixedFab sx={{ right: '16px', top: 72 + (filters().length > 0 ? 56 : 0) }} onClick={() => resetBearing()} size='small' color='primary'>
         <Navigation sx={{ transform: `rotate(${-viewport().bearing}deg)` }} />
       </FixedFab>
-      <SelectionDrawer title={selectedPlant()?.code} placeholder={drawerPlaceholderText()} actions={selectedPlant() &&
+      <SelectionDrawer title={selectedPlant()?.code} placeholder={drawerPlaceholderText()} actions={selectedPlantPlanted() ?
         <>
           <IconButton sx={{ width: 56 }} color="error" onClick={deadPlantClicked} disabled={submitDeadPlant()}>
             <HeartBroken />
             {submitDeadPlant() && <CircularProgress color='inherit' size={40} sx={{ position: 'absolute' }} />}
+          </IconButton>
+        </>
+        :
+        <>
+          <IconButton sx={{ width: 56 }} color="success" onClick={plantPlantClicked} disabled={submitPlantPlant()}>
+            <Grass />
+            {submitPlantPlant() && <CircularProgress color='inherit' size={40} sx={{ position: 'absolute' }} />}
           </IconButton>
         </>
       }>
@@ -285,6 +321,7 @@ const App: Component = () => {
       <ReloadPrompt />
       {submitWater() && <WaterSubmit waterSelectedIds={waterSelectedIds} onFinish={waterSubmitted}/>}
       {submitDeadPlant() && <DeadPlantSubmit plant={selectedPlant()} onFinish={deadPlantSubmitted}/>}
+      {submitPlantPlant() && <PlantPlantSubmit plant={selectedPlant()} onFinish={plantPlantSubmitted}/>}
     </ThemeProvider>
   );
 };
