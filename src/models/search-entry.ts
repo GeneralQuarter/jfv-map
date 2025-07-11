@@ -4,10 +4,10 @@ export type SearchEntry = {
   secondaryText?: string;
   tertiaryText?: string;
   searchTerms: string[];
-}
+};
 
 export type SearchEntryGroup = {
   id: string;
   headerText: string;
   entries: SearchEntry[];
-}
+};

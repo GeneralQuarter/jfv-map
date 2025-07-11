@@ -1,5 +1,5 @@
-import { Component } from 'solid-js';
-import { Source, Layer } from 'solid-map-gl';
+import type { Component } from 'solid-js';
+import { Layer, Source } from 'solid-map-gl';
 import staticMapFeatureCollection from '@/data/static-map-feature-collection';
 
 const StaticMapFeatures: Component = () => {
@@ -12,7 +12,7 @@ const StaticMapFeatures: Component = () => {
             'fill-color': 'blue',
             'fill-opacity': 0.2,
           },
-          filter: ['==', 'id', 'gartempe']
+          filter: ['==', 'id', 'gartempe'],
         }}
       />
       <Layer
@@ -21,16 +21,7 @@ const StaticMapFeatures: Component = () => {
           paint: {
             'line-color': 'gray',
           },
-          filter: ['==', 'id', 'terrain']
-        }}
-      />
-      <Layer
-        style={{
-          type: 'line',
-          paint: {
-            'line-color': 'gray'
-          },
-          filter: ['==', 'id', 'fences']
+          filter: ['==', 'id', 'terrain'],
         }}
       />
       <Layer
@@ -38,9 +29,18 @@ const StaticMapFeatures: Component = () => {
           type: 'line',
           paint: {
             'line-color': 'gray',
-            'line-dasharray': [2, 2]
           },
-          filter: ['==', 'id', 'doors']
+          filter: ['==', 'id', 'fences'],
+        }}
+      />
+      <Layer
+        style={{
+          type: 'line',
+          paint: {
+            'line-color': 'gray',
+            'line-dasharray': [2, 2],
+          },
+          filter: ['==', 'id', 'doors'],
         }}
       />
       <Layer
@@ -50,7 +50,7 @@ const StaticMapFeatures: Component = () => {
             'fill-color': 'blue',
             'fill-opacity': 0.2,
           },
-          filter: ['==', 'id', 'happyLake']
+          filter: ['==', 'id', 'happyLake'],
         }}
       />
       <Layer
@@ -61,7 +61,7 @@ const StaticMapFeatures: Component = () => {
             'fill-outline-color': 'transparent',
             'fill-opacity': 0.5,
           },
-          filter: ['==', 'id', 'd116']
+          filter: ['==', 'id', 'd116'],
         }}
       />
       <Layer
@@ -72,7 +72,7 @@ const StaticMapFeatures: Component = () => {
             'fill-outline-color': 'transparent',
             'fill-opacity': 0.5,
           },
-          filter: ['==', 'id', 'path']
+          filter: ['==', 'id', 'path'],
         }}
       />
       <Layer
@@ -82,11 +82,11 @@ const StaticMapFeatures: Component = () => {
             'fill-color': 'blue',
             'fill-opacity': 0.2,
           },
-          filter: ['==', 'id', 'ponds']
+          filter: ['==', 'id', 'ponds'],
         }}
       />
     </Source>
-  )
-}
+  );
+};
 
 export default StaticMapFeatures;

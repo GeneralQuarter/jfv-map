@@ -1,6 +1,6 @@
 import { ExpandLess, TouchApp } from '@suid/icons-material';
 import { Box, Paper, Stack, styled, Typography } from '@suid/material';
-import { Component, createEffect, createSignal, JSX } from 'solid-js';
+import { type Component, createEffect, createSignal, type JSX } from 'solid-js';
 
 const Container = styled(Paper)({
   position: 'absolute',
@@ -28,9 +28,9 @@ const Container = styled(Paper)({
     },
 
     ' .expand-icon': {
-      rotate: '180deg'
-    }
-  }
+      rotate: '180deg',
+    },
+  },
 });
 
 const Header = styled(Box)({
@@ -62,24 +62,31 @@ const SelectionDrawer: Component<Props> = (props) => {
     }
 
     setOpen(!open());
-  }
+  };
 
-  return (<Container elevation={5} class={open() ? 'active' : ''} square={true}>
-    <Header onClick={toggleOpen}>
-      <Stack direction='row' paddingLeft={2}>
-        <Stack paddingY={2} gap={2} direction='row' sx={{ color: props.title ? 'text.primary' : 'text.secondary' }}>
-          {props.title ? <ExpandLess class='expand-icon' /> : <TouchApp />}
-          <Typography>{props.title ?? props.placeholder}</Typography>
+  return (
+    <Container elevation={5} class={open() ? 'active' : ''} square={true}>
+      <Header onClick={toggleOpen}>
+        <Stack direction="row" paddingLeft={2}>
+          <Stack
+            paddingY={2}
+            gap={2}
+            direction="row"
+            sx={{ color: props.title ? 'text.primary' : 'text.secondary' }}
+          >
+            {props.title ? <ExpandLess class="expand-icon" /> : <TouchApp />}
+            <Typography>{props.title ?? props.placeholder}</Typography>
+          </Stack>
+          <Stack direction="row" sx={{ ml: 'auto' }}>
+            {props.actions}
+          </Stack>
         </Stack>
-        <Stack direction='row' sx={{ ml: 'auto' }}>
-          {props.actions}
-        </Stack>
-      </Stack>
-    </Header>
-    <Box class='drawer-content' sx={{ px: 2, pb: 2 }}>
-      {props.children}
-    </Box>
-  </Container>);
-}
+      </Header>
+      <Box class="drawer-content" sx={{ px: 2, pb: 2 }}>
+        {props.children}
+      </Box>
+    </Container>
+  );
+};
 
 export default SelectionDrawer;

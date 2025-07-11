@@ -1,5 +1,5 @@
+import { brown, green } from '@suid/material/colors';
 import { createTheme } from '@suid/material/styles';
-import { green, brown } from '@suid/material/colors';
 
 export default createTheme({
   palette: {

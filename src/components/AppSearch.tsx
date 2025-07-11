@@ -1,12 +1,25 @@
-import { Component, createMemo, createSignal, For } from 'solid-js';
-import { InputBase, styled, alpha, IconButton, Fade, Popover, List, ListSubheader, ListItem, ListItemButton, ListItemText, Typography } from '@suid/material';
-import { Search as SearchIcon, Close as CloseIcon } from '@suid/icons-material';
-import theme from '@/theme';
-import { normalizeSearchTerm } from '@/lib/normalize-search-term';
-import { createSignaledWorker } from '@solid-primitives/workers';
 import { createScheduled, debounce } from '@solid-primitives/scheduled';
+import { createSignaledWorker } from '@solid-primitives/workers';
+import { Close as CloseIcon, Search as SearchIcon } from '@suid/icons-material';
+import {
+  alpha,
+  Fade,
+  IconButton,
+  InputBase,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListSubheader,
+  Popover,
+  styled,
+  Typography,
+} from '@suid/material';
+import { type Component, createMemo, createSignal, For } from 'solid-js';
+import { normalizeSearchTerm } from '@/lib/normalize-search-term';
 import type { SearchEntry, SearchEntryGroup } from '@/models/search-entry';
- 
+import theme from '@/theme';
+
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: theme.shape.borderRadius,
@@ -29,7 +42,7 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
   justifyContent: 'center',
 }));
 
-const CloseIconWrapper = styled('div')(({ theme }) => ({
+const CloseIconWrapper = styled('div')(() => ({
   height: '100%',
   position: 'absolute',
   right: 0,
@@ -51,44 +64,62 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const PopoverFull = styled(Popover)(({ theme }) => ({
+const PopoverFull = styled(Popover)(() => ({
   top: 48,
 }));
 
 type Props = {
   groups: SearchEntryGroup[];
   onEntryClick: (groupId: string, entryId: SearchEntry) => void;
-}
+};
 
-function search([normalizedTerm, groups]: [string, SearchEntryGroup[]]): SearchEntryGroup[] {
+function search([normalizedTerm, groups]: [
+  string,
+  SearchEntryGroup[],
+]): SearchEntryGroup[] {
   if (normalizedTerm.length < 2) {
     return [];
   }
 
-  return groups.map(group => ({
-    ...group,
-    entries: group.entries
-      .filter(entry => entry.searchTerms.some(t => t.includes(normalizedTerm)))
-      .sort((a, b) => a.primaryText.localeCompare(b.primaryText))
-      .slice(0, 100),
-  })).filter(group => group.entries.length > 0);
+  return groups
+    .map((group) => ({
+      ...group,
+      entries: group.entries
+        .filter((entry) =>
+          entry.searchTerms.some((t) => t.includes(normalizedTerm)),
+        )
+        .sort((a, b) => a.primaryText.localeCompare(b.primaryText))
+        .slice(0, 100),
+    }))
+    .filter((group) => group.entries.length > 0);
 }
 
 const AppSearch: Component<Props> = (props) => {
   const [textValue, setTextValue] = createSignal<string>('');
-  const [anchorEl, setAnchorEl] = createSignal<HTMLDivElement | undefined>(undefined);
-  const [filteredGroups, setFilteredGroups] = createSignal<SearchEntryGroup[]>([]);
-  const scheduledSearch = createScheduled(fn => debounce(fn, 300));
+  const [anchorEl, setAnchorEl] = createSignal<HTMLDivElement | undefined>(
+    undefined,
+  );
+  const [filteredGroups, setFilteredGroups] = createSignal<SearchEntryGroup[]>(
+    [],
+  );
+  const scheduledSearch = createScheduled((fn) => debounce(fn, 300));
 
-  const workerInput = createMemo<[normalizedTerm: string, groups: SearchEntryGroup[]]>(() => {
+  const workerInput = createMemo<
+    [normalizedTerm: string, groups: SearchEntryGroup[]]
+  >(() => {
     const normalizedTerm = normalizeSearchTerm(textValue() ?? '');
     return [normalizedTerm, props.groups];
   });
 
-  const debouncedWorkerInput = createMemo<[normalizedTerm: string, groups: SearchEntryGroup[]]>((p) => {
-    const value = workerInput();
-    return scheduledSearch() ? value : p;
-  }, ['', props.groups]);
+  const debouncedWorkerInput = createMemo<
+    [normalizedTerm: string, groups: SearchEntryGroup[]]
+  >(
+    (p) => {
+      const value = workerInput();
+      return scheduledSearch() ? value : p;
+    },
+    ['', props.groups],
+  );
 
   createSignaledWorker({
     input: debouncedWorkerInput,
@@ -105,7 +136,7 @@ const AppSearch: Component<Props> = (props) => {
           <SearchIcon />
         </SearchIconWrapper>
         <StyledInputBase
-          placeholder='Recherche...'
+          placeholder="Recherche..."
           inputProps={{ 'aria-label': 'search' }}
           onChange={(evt) => {
             setTextValue(evt.target.value);
@@ -114,13 +145,18 @@ const AppSearch: Component<Props> = (props) => {
         />
         <CloseIconWrapper>
           <Fade in={showResults()}>
-            <IconButton aria-label='clear search' color='inherit' onClick={() => setTextValue('')}>
+            <IconButton
+              aria-label="clear search"
+              color="inherit"
+              onClick={() => setTextValue('')}
+            >
               <CloseIcon />
             </IconButton>
           </Fade>
         </CloseIconWrapper>
       </Search>
-      <PopoverFull id="search-results"
+      <PopoverFull
+        id="search-results"
         open={showResults()}
         anchorEl={anchorEl()}
         onBackdropClick={() => setTextValue('')}
@@ -138,34 +174,65 @@ const AppSearch: Component<Props> = (props) => {
           }}
           subheader={<li />}
         >
-          <For each={filteredGroups()}>{(group) =>
-            <li>
-              <ul>
-                <ListSubheader color='primary' sx={{ bgcolor: theme.palette.primary.main, color: theme.palette.primary.contrastText }}>{group.headerText}</ListSubheader>
-                <For each={group.entries}>{(entry) =>
-                  <ListItemButton onClick={() => {
-                    props.onEntryClick(group.id, entry);
-                    setTextValue('');
-                  }}>
-                    <ListItemText 
-                      primary={entry.primaryText}
-                      secondary={entry.secondaryText && <>
-                        {entry.secondaryText}{entry.tertiaryText && <>
-                          {' • '}
-                          <Typography component='span' color='secondary' variant='body2'>{entry.tertiaryText}</Typography>
-                        </>}
-                      </>}
-                    />
-                  </ListItemButton>
-                }</For>
-              </ul>
-            </li>
-          }</For>
-          {filteredGroups().length === 0 && <ListItem><ListItemText primary='Pas de résultat'/></ListItem>}
+          <For each={filteredGroups()}>
+            {(group) => (
+              <li>
+                <ul>
+                  <ListSubheader
+                    color="primary"
+                    sx={{
+                      bgcolor: theme.palette.primary.main,
+                      color: theme.palette.primary.contrastText,
+                    }}
+                  >
+                    {group.headerText}
+                  </ListSubheader>
+                  <For each={group.entries}>
+                    {(entry) => (
+                      <ListItemButton
+                        onClick={() => {
+                          props.onEntryClick(group.id, entry);
+                          setTextValue('');
+                        }}
+                      >
+                        <ListItemText
+                          primary={entry.primaryText}
+                          secondary={
+                            entry.secondaryText && (
+                              <>
+                                {entry.secondaryText}
+                                {entry.tertiaryText && (
+                                  <>
+                                    {' • '}
+                                    <Typography
+                                      component="span"
+                                      color="secondary"
+                                      variant="body2"
+                                    >
+                                      {entry.tertiaryText}
+                                    </Typography>
+                                  </>
+                                )}
+                              </>
+                            )
+                          }
+                        />
+                      </ListItemButton>
+                    )}
+                  </For>
+                </ul>
+              </li>
+            )}
+          </For>
+          {filteredGroups().length === 0 && (
+            <ListItem>
+              <ListItemText primary="Pas de résultat" />
+            </ListItem>
+          )}
         </List>
       </PopoverFull>
     </>
-  )
-}
+  );
+};
 
 export default AppSearch;

@@ -1,7 +1,15 @@
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+} from '@suid/material';
+import { type Component, createSignal, onMount } from 'solid-js';
 import postPlantPlant from '@/lib/api/post-plant-plant';
-import { Plant } from '@/models/plant';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@suid/material';
-import { Component, createSignal, onMount } from 'solid-js';
+import type { Plant } from '@/models/plant';
 
 type Props = {
   plant: Plant;
@@ -12,12 +20,13 @@ const passwordCacheKey = 'jfv-password-v1';
 
 const PlantPlantSubmit: Component<Props> = (props) => {
   const [password, setPassword] = createSignal<string>('');
-  const [passwordDialogOpen, setPasswordDialogOpen] = createSignal<boolean>(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] =
+    createSignal<boolean>(false);
   const [errorDialogOpen, setErrorDialogOpen] = createSignal<boolean>(false);
 
   onMount(() => {
     const p = localStorage.getItem(passwordCacheKey);
-    
+
     if (p) {
       setPassword(p);
       submitPlantPlant();
@@ -30,13 +39,13 @@ const PlantPlantSubmit: Component<Props> = (props) => {
 
   const cancelPasswordDialog = () => {
     props.onFinish('Cancelled');
-  }
+  };
 
   const submitPasswordDialog = () => {
     localStorage.setItem(passwordCacheKey, password());
     setPasswordDialogOpen(false);
     submitPlantPlant();
-  }
+  };
 
   const submitPlantPlant = async () => {
     const result = await postPlantPlant(props.plant.id, password());
@@ -54,46 +63,49 @@ const PlantPlantSubmit: Component<Props> = (props) => {
         setErrorDialogOpen(true);
         return;
     }
-  }
+  };
 
   const closeErrorDialog = () => {
     setErrorDialogOpen(false);
     props.onFinish('Cancelled');
-  }
+  };
 
-  return <>
-    <Dialog open={passwordDialogOpen()} onClose={cancelPasswordDialog}>
-      <DialogTitle>Mot de passe</DialogTitle>
-      <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="password"
-          label="Password"
-          type="password"
-          fullWidth
-          variant="standard"
-          value={password()}
-          onChange={(evt) => setPassword(evt.target.value)}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={cancelPasswordDialog}>Annuler</Button>
-        <Button onClick={submitPasswordDialog}>Valider</Button>
-      </DialogActions>
-    </Dialog>
-    <Dialog open={errorDialogOpen()} onClose={closeErrorDialog}>
-      <DialogTitle>Erreur</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          La mise a jour de {props.plant.code} n'a pas pu être faite. Réessayez plus tard.
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={closeErrorDialog}>Ok</Button>
-      </DialogActions>
-    </Dialog>
-  </>
-}
+  return (
+    <>
+      <Dialog open={passwordDialogOpen()} onClose={cancelPasswordDialog}>
+        <DialogTitle>Mot de passe</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="password"
+            label="Password"
+            type="password"
+            fullWidth
+            variant="standard"
+            value={password()}
+            onChange={(evt) => setPassword(evt.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelPasswordDialog}>Annuler</Button>
+          <Button onClick={submitPasswordDialog}>Valider</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={errorDialogOpen()} onClose={closeErrorDialog}>
+        <DialogTitle>Erreur</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            La mise a jour de {props.plant.code} n'a pas pu être faite.
+            Réessayez plus tard.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeErrorDialog}>Ok</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
 
 export default PlantPlantSubmit;

@@ -1,39 +1,45 @@
-import { Rectangle } from '@/models/rectangle';
-import { Component, createMemo } from 'solid-js';
-import { Layer, Source } from 'solid-map-gl';
 import type { FeatureCollection } from 'geojson';
+import { type Component, createMemo } from 'solid-js';
+import { Layer, Source } from 'solid-map-gl';
+import type { Rectangle } from '@/models/rectangle';
 
 type Props = {
-  rectangles: Rectangle[]
+  rectangles: Rectangle[];
 };
 
-const rectanglesToFeatureCollection = (rectangles: Rectangle[]): FeatureCollection => {
+const rectanglesToFeatureCollection = (
+  rectangles: Rectangle[],
+): FeatureCollection => {
   return {
     type: 'FeatureCollection',
-    features: rectangles.map(rectangle => ({
+    features: rectangles.map((rectangle) => ({
       type: 'Feature',
       geometry: {
         type: 'Polygon',
-        coordinates: [
-          rectangle.coords.map(coords => [coords[1], coords[0]])
-        ]
+        coordinates: [rectangle.coords.map((coords) => [coords[1], coords[0]])],
       },
-      properties: {}
+      properties: {},
     })),
   };
-}
+};
 
 const Rectangles: Component<Props> = (props) => {
-  const rectangleFeatureCollection = createMemo(() => rectanglesToFeatureCollection(props.rectangles));
-  return (<Source source={{ type: 'geojson', data: rectangleFeatureCollection() }}>
-    <Layer style={{
-      type: 'fill',
-      paint: {
-        'fill-color': 'orange',
-        'fill-opacity': 0.3
-      }
-    }}/>
-  </Source>);
-}
+  const rectangleFeatureCollection = createMemo(() =>
+    rectanglesToFeatureCollection(props.rectangles),
+  );
+  return (
+    <Source source={{ type: 'geojson', data: rectangleFeatureCollection() }}>
+      <Layer
+        style={{
+          type: 'fill',
+          paint: {
+            'fill-color': 'orange',
+            'fill-opacity': 0.3,
+          },
+        }}
+      />
+    </Source>
+  );
+};
 
 export default Rectangles;

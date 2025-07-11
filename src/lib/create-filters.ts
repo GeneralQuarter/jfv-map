@@ -1,22 +1,24 @@
-import { createSignal, Accessor } from 'solid-js';
+import { type Accessor, createSignal } from 'solid-js';
 
 export type Filter = {
   id: string;
   type: string;
   label: string;
-}
+};
 
 type CreateFilters = [
   filters: Accessor<Filter[]>,
   addFilter: (filter: Filter) => void,
   removeFilter: (filterId: string) => void,
-]
+];
 
-export default function createFilters(initialFilters: Filter[] = []): CreateFilters {
+export default function createFilters(
+  initialFilters: Filter[] = [],
+): CreateFilters {
   const [filters, setFilters] = createSignal<Filter[]>(initialFilters);
-  
+
   const addFilter = (filter: Filter) => {
-    const exists = filters().some(f => f.id === filter.id);
+    const exists = filters().some((f) => f.id === filter.id);
 
     if (exists) {
       return;
@@ -26,7 +28,7 @@ export default function createFilters(initialFilters: Filter[] = []): CreateFilt
   };
 
   const removeFilter = (filterId: string) => {
-    const filterIndex = filters().findIndex(f => f.id === filterId);
+    const filterIndex = filters().findIndex((f) => f.id === filterId);
 
     if (filterIndex === -1) {
       return;
